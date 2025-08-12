@@ -110,10 +110,11 @@ export function Navigation() {
                 <Button variant="outline" asChild>
                   <Link href="/login">Staff Login</Link>
                 </Button>
-                <Button asChild>
+                <Button asChild size="sm" className="px-2 sm:px-4">
                   <Link href="/patients/register">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Register Patient
+                    <UserPlus className="h-4 w-4" />
+                    <span className="hidden md:inline ml-2">Register Patient</span>
+                    <span className="hidden sm:inline md:hidden ml-2">Register</span>
                   </Link>
                 </Button>
               </>
