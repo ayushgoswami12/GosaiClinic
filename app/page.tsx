@@ -27,27 +27,124 @@ import { useTheme } from "next-themes"
 
 export default function HomePage() {
   const [totalPatients, setTotalPatients] = useState(0)
+  const [appointments, setAppointments] = useState<any[]>([])
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { theme, setTheme } = useTheme()
 
   useEffect(() => {
-    const patients = JSON.parse(localStorage.getItem("patients") || "[]")
-    setTotalPatients(patients.length)
+    const loadPatients = () => {
+      try {
+        const patients = JSON.parse(localStorage.getItem("patients") || "[]")
+        setTotalPatients(patients.length)
+      } catch (error) {
+        console.error("Error loading patients:", error)
+        // Reset to empty array if there's an error
+        localStorage.setItem("patients", JSON.stringify([]))
+        setTotalPatients(0)
+      }
+    }
+
+    loadPatients()
 
     // Listen for storage changes to update count in real-time
-    const handleStorageChange = () => {
-      const updatedPatients = JSON.parse(localStorage.getItem("patients") || "[]")
-      setTotalPatients(updatedPatients.length)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "patients") {
+        loadPatients()
+      }
+    }
+
+    const handlePatientAdded = () => {
+      loadPatients()
     }
 
     window.addEventListener("storage", handleStorageChange)
-    window.addEventListener("patientAdded", handleStorageChange)
+    window.addEventListener("patientAdded", handlePatientAdded)
 
     return () => {
       window.removeEventListener("storage", handleStorageChange)
-      window.removeEventListener("patientAdded", handleStorageChange)
+      window.removeEventListener("patientAdded", handlePatientAdded)
     }
   }, [])
+
+  // Load appointments from localStorage with error handling
+  useEffect(() => {
+    const loadAppointments = () => {
+      try {
+        const storedAppointments = localStorage.getItem("appointments")
+        if (storedAppointments) {
+          const parsedAppointments = JSON.parse(storedAppointments)
+          setAppointments(parsedAppointments)
+        } else {
+          // Initialize empty appointments array if none exists
+          localStorage.setItem("appointments", JSON.stringify([]))
+          setAppointments([])
+        }
+      } catch (error) {
+        console.error("Error loading appointments:", error)
+        // Reset to empty array if there's an error
+        localStorage.setItem("appointments", JSON.stringify([]))
+        setAppointments([])
+      }
+    }
+
+    loadAppointments()
+
+    // Listen for appointment updates
+    const handleAppointmentAdded = () => {
+      loadAppointments()
+    }
+
+    const handleAppointmentUpdated = () => {
+      loadAppointments()
+    }
+
+    // Also listen for storage changes from other tabs/windows
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "appointments") {
+        loadAppointments()
+      }
+    }
+
+    window.addEventListener("appointmentAdded", handleAppointmentAdded)
+    window.addEventListener("appointmentUpdated", handleAppointmentUpdated)
+    window.addEventListener("storage", handleStorageChange)
+
+    return () => {
+      window.removeEventListener("appointmentAdded", handleAppointmentAdded)
+      window.removeEventListener("appointmentUpdated", handleAppointmentUpdated)
+      window.removeEventListener("storage", handleStorageChange)
+    }
+  }, [])
+
+  // Helper functions for appointments
+  const getTodaysAppointments = () => {
+    const today = new Date().toISOString().split('T')[0]
+    return appointments.filter(apt => apt.date === today)
+  }
+
+  const getRecentAppointments = () => {
+    return appointments.slice(0, 2) // Get last 2 appointments
+  }
+
+  const formatTime = (time: string) => {
+    if (!time) return "N/A"
+    return time
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "done":
+        return <Badge className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs">Completed</Badge>
+      case "confirmed":
+        return <Badge className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs">Confirmed</Badge>
+      case "pending":
+        return <Badge className="bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 text-xs">Pending</Badge>
+      case "urgent":
+        return <Badge className="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs">Urgent</Badge>
+      default:
+        return <Badge className="bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 text-xs">{status}</Badge>
+    }
+  }
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
@@ -187,10 +284,10 @@ export default function HomePage() {
         </nav>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-4 lg:px-8 py-4 lg:py-6">
+              {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="bg-white dark:bg-slate-800 border-b dark:border-slate-700 px-4 lg:px-8 py-4 lg:py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)} className="lg:hidden">
@@ -203,16 +300,16 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2 lg:space-x-3">
+            <div className="flex items-center space-x-3">
               <Button
                 variant="outline"
-                className="hidden sm:flex items-center space-x-2 bg-transparent text-xs lg:text-sm"
+                className="hidden sm:flex items-center space-x-2 bg-transparent text-xs lg:text-sm h-9 px-3 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200"
               >
                 <CalendarDays className="w-4 h-4" />
                 <span className="hidden md:inline">View Schedule</span>
               </Button>
               <Link href="/patients/register">
-                <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 flex items-center space-x-2 text-xs lg:text-sm">
+                <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 flex items-center space-x-2 text-xs lg:text-sm h-9 px-3 shadow-lg transition-all duration-200">
                   <UserPlus className="w-4 h-4" />
                   <span className="hidden sm:inline">New Patient</span>
                   <span className="sm:hidden">New</span>
@@ -223,10 +320,10 @@ export default function HomePage() {
         </div>
 
         {/* Dashboard Content */}
-        <div className="flex-1 overflow-auto p-4 lg:p-8">
+        <div className="flex-1 overflow-auto p-4 lg:p-8 pt-8">
           {/* Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
-            <Card>
+            <Card className="bg-white dark:bg-slate-900/50 border-gray-200 dark:border-slate-700/50 shadow-sm dark:shadow-slate-900/20">
               <CardContent className="p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -247,12 +344,12 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white dark:bg-slate-900/50 border-gray-200 dark:border-slate-700/50 shadow-sm dark:shadow-slate-900/20">
               <CardContent className="p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mb-1">Available Beds</p>
-                    <p className="text-xl lg:text-3xl font-bold text-gray-900 dark:text-white">12</p>
+                    <p className="text-xs lg:text-sm text-gray-600 dark:text-slate-400 mb-1">Available Beds</p>
+                    <p className="text-xl lg:text-3xl font-bold text-gray-900 dark:text-slate-100">12</p>
                     <div className="flex items-center mt-2">
                       <span className="text-xs text-gray-500 dark:text-gray-400">from</span>
                       <div className="flex items-center ml-1">
@@ -268,17 +365,17 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white dark:bg-slate-900/50 border-gray-200 dark:border-slate-700/50 shadow-sm dark:shadow-slate-900/20">
               <CardContent className="p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mb-1">Today's Appointments</p>
-                    <p className="text-xl lg:text-3xl font-bold text-gray-900 dark:text-white">18</p>
+                    <p className="text-xs lg:text-sm text-gray-600 dark:text-slate-400 mb-1">Today's Appointments</p>
+                    <p className="text-xl lg:text-3xl font-bold text-gray-900 dark:text-slate-100">{getTodaysAppointments().length}</p>
                     <div className="flex items-center mt-2">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">from</span>
+                      <span className="text-xs text-gray-500 dark:text-slate-400">from</span>
                       <div className="flex items-center ml-1">
                         <TrendingUp className="w-3 h-3 text-green-500 mr-1" />
-                        <span className="text-xs text-green-500">+3 last week</span>
+                        <span className="text-xs text-green-500">+{appointments.length} total</span>
                       </div>
                     </div>
                   </div>
@@ -289,17 +386,16 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white dark:bg-slate-900/50 border-gray-200 dark:border-slate-700/50 shadow-sm dark:shadow-slate-900/20">
               <CardContent className="p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mb-1">Active Doctors</p>
-                    <p className="text-xl lg:text-3xl font-bold text-gray-900 dark:text-white">3</p>
-                    <div className="flex items-center mt-2">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">from</span>
-                      <div className="flex items-center ml-1">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">0 last week</span>
-                      </div>
+                    <p className="text-xs lg:text-sm text-gray-600 dark:text-slate-400 mb-1">Active Doctors</p>
+                    <p className="text-xl lg:text-3xl font-bold text-gray-900 dark:text-slate-100">3</p>
+                    <div className="flex flex-col mt-2 space-y-1">
+                      <span className="text-xs text-gray-500 dark:text-slate-400">Dr. Tansukh Gosai - General Physician</span>
+                      <span className="text-xs text-gray-500 dark:text-slate-400">Dr. Devang Gosai - Ano Rectal Expert</span>
+                      <span className="text-xs text-gray-500 dark:text-slate-400">Dr. Dhara Gosai - Dental Surgeon</span>
                     </div>
                   </div>
                   <div className="w-8 h-8 lg:w-12 lg:h-12 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
@@ -321,45 +417,32 @@ export default function HomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 lg:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 lg:w-10 lg:h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                      <Heart className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600 dark:text-blue-400" />
+                {getRecentAppointments().length > 0 ? (
+                  getRecentAppointments().map((appointment, index) => (
+                    <div key={appointment.id} className="flex items-center justify-between p-3 lg:p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700/50">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 lg:w-10 lg:h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                          <Heart className="w-4 h-4 lg:w-5 lg:w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm lg:text-base font-medium text-gray-900 dark:text-slate-100">{appointment.patientName}</p>
+                          <p className="text-xs lg:text-sm text-gray-500 dark:text-slate-400">{appointment.appointmentType}</p>
+                          <p className="text-xs text-blue-600 dark:text-blue-400">
+                            {formatTime(appointment.time)} • {appointment.doctor}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {getStatusBadge(appointment.status)}
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm lg:text-base font-medium text-gray-900 dark:text-white">Sarah Johnson</p>
-                      <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">Routine Checkup</p>
-                      <p className="text-xs text-blue-600 dark:text-blue-400">10:30 AM • Dr. T</p>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-gray-500 dark:text-slate-400">
+                    <Users className="w-8 h-8 mx-auto mb-2 text-gray-400 dark:text-slate-500" />
+                    <p className="text-sm">No Recent Activities</p>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 lg:w-4 lg:h-4 bg-green-500 rounded-full"></div>
-                    <Badge
-                      variant="secondary"
-                      className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs"
-                    >
-                      Stable
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 lg:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 lg:w-10 lg:h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                      <Heart className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm lg:text-base font-medium text-gray-900 dark:text-white">Michael Chen</p>
-                      <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">Emergency</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-3 h-3 lg:w-4 lg:h-4 text-red-500" />
-                    <Badge variant="destructive" className="text-xs">
-                      Critical
-                    </Badge>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -372,36 +455,32 @@ export default function HomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 lg:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-blue-600 dark:text-blue-400 font-semibold text-center">
-                      <div className="text-xs lg:text-sm">9:00 AM</div>
+                {getTodaysAppointments().length > 0 ? (
+                  getTodaysAppointments().slice(0, 3).map((appointment) => (
+                    <div key={appointment.id} className="flex items-center justify-between p-3 lg:p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700/50">
+                      <div className="flex items-center space-x-3">
+                        <div className="text-blue-600 dark:text-blue-400 font-semibold text-center">
+                          <div className="text-xs lg:text-sm">{formatTime(appointment.time)}</div>
+                        </div>
+                        <div>
+                          <p className="text-sm lg:text-base font-medium text-gray-900 dark:text-slate-100">{appointment.patientName}</p>
+                          <p className="text-xs lg:text-sm text-gray-500 dark:text-slate-400">{appointment.doctor}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline" className="text-xs">
+                          {appointment.appointmentType}
+                        </Badge>
+                        {getStatusBadge(appointment.status)}
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm lg:text-base font-medium text-gray-900 dark:text-white">Alice Cooper</p>
-                      <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">Dr. T</p>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-gray-500 dark:text-slate-400">
+                    <Calendar className="w-8 h-8 mx-auto mb-2 text-gray-400 dark:text-slate-500" />
+                    <p className="text-sm">No appointments today</p>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    Consultation
-                  </Badge>
-                </div>
-
-                <div className="flex items-center justify-between p-3 lg:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-blue-600 dark:text-blue-400 font-semibold text-center">
-                      <div className="text-xs lg:text-sm">10:30</div>
-                      <div className="text-xs lg:text-sm">AM</div>
-                    </div>
-                    <div>
-                      <p className="text-sm lg:text-base font-medium text-gray-900 dark:text-white">Bob Anderson</p>
-                      <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">Dr. Dev</p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    Follow-up
-                  </Badge>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>

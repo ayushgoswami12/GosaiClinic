@@ -14,25 +14,18 @@ import { ArrowLeft, Calendar, Clock, User, Stethoscope } from "lucide-react"
 import Link from "next/link"
 
 const departments = [
-  "General Medicine",
-  "Cardiology",
-  "Orthopedics",
-  "Dermatology",
-  "Neurology",
-  "Pediatrics",
-  "Emergency",
-  "Surgery",
+  "General Physician",
+  "Ano Rectal Expert",
+  "Dental Surgeon",
 ]
 
 const doctors = [
-  { id: 1, name: "Dr. Tansukh Gosai", department: "Cardiology", available: true },
-  { id: 2, name: "Dr. Devang Gosai", department: "Orthopedics", available: true },
-  { id: 3, name: "Dr. Dhara Gosai", department: "General Medicine", available: true },
-  { id: 4, name: "Dr. Tansukh Gosai", department: "Dermatology", available: false },
-  { id: 5, name: "Dr. Devang Gosai", department: "Neurology", available: true },
+  { id: 1, name: "Dr. Tansukh Gosai", department: "General Physician", available: true },
+  { id: 2, name: "Dr. Devang Gosai", department: "Ano Rectal Expert", available: true },
+  { id: 3, name: "Dr. Dhara Gosai", department: "Dental Surgeon", available: true },
 ]
 
-const appointmentTypes = ["Consultation", "Follow-up", "Check-up", "Emergency", "Surgery Consultation"]
+const appointmentTypes = ["Consultation", "Follow-up", "Emergency"]
 
 const timeSlots = [
   "08:00",
@@ -69,18 +62,70 @@ export default function BookAppointment() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Booking appointment:", formData)
-    alert("Appointment booked successfully! (Demo)")
+    
+    try {
+      // Create new appointment object
+      const newAppointment = {
+        id: `APT-${Date.now()}`,
+        ...formData,
+        status: "confirmed",
+        createdAt: new Date().toISOString(),
+        patientId: `PAT-${Date.now()}`, // Generate a temporary patient ID
+        lastUpdated: new Date().toISOString(), // Track last update
+      }
+
+      // Get existing appointments from localStorage
+      const existingAppointments = JSON.parse(localStorage.getItem("appointments") || "[]")
+      const updatedAppointments = [...existingAppointments, newAppointment]
+      
+      // Save to localStorage
+      localStorage.setItem("appointments", JSON.stringify(updatedAppointments))
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent("appointmentAdded"))
+      
+      alert(`Appointment booked successfully for ${formData.patientName}!`)
+      
+      // Reset form
+      setFormData({
+        patientName: "",
+        patientPhone: "",
+        patientEmail: "",
+        department: "",
+        doctor: "",
+        appointmentType: "",
+        date: "",
+        time: "",
+        duration: "30",
+        notes: "",
+      })
+      
+      // Redirect to appointments list
+      window.location.href = "/appointments"
+      
+    } catch (error) {
+      console.error("Error booking appointment:", error)
+      alert("There was an error booking the appointment. Please try again.")
+    }
   }
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-
-    // Filter doctors by department
+    // If changing department, always clear the doctor first
     if (field === "department") {
+      setFormData((prev) => ({ ...prev, [field]: value, doctor: "" }))
+      
       const filtered = doctors.filter((doctor) => doctor.department === value && doctor.available)
       setAvailableDoctors(filtered)
-      setFormData((prev) => ({ ...prev, doctor: "" }))
+      
+      // Auto-select the doctor for the new department
+      if (filtered.length === 1) {
+        setTimeout(() => {
+          setFormData((prev) => ({ ...prev, doctor: filtered[0].name }))
+        }, 0)
+      }
+    } else {
+      // For other fields, just update normally
+      setFormData((prev) => ({ ...prev, [field]: value }))
     }
   }
 
@@ -88,7 +133,7 @@ export default function BookAppointment() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navigation />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8">
         {/* Header */}
         <div className="mb-8">
           <Button variant="ghost" asChild className="mb-4">
@@ -191,11 +236,12 @@ export default function BookAppointment() {
                       <SelectContent>
                         {availableDoctors.map((doctor) => (
                           <SelectItem key={doctor.id} value={doctor.name}>
-                            {doctor.name}
+                            {doctor.name} - {doctor.department}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+
                   </div>
                 </div>
 

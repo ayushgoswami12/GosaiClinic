@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Navigation } from "@/components/navigation"
+import Link from "next/link"
 import {
   Users,
   Calendar,
@@ -28,11 +29,11 @@ const mockStats = {
 }
 
 const mockAppointments = [
-  { id: 1, patient: "John Smith", time: "09:00 AM", type: "Consultation", status: "confirmed" },
-  { id: 2, patient: "Sarah Johnson", time: "10:30 AM", type: "Follow-up", status: "confirmed" },
-  { id: 3, patient: "Mike Davis", time: "11:15 AM", type: "Emergency", status: "urgent" },
-  { id: 4, patient: "Emily Brown", time: "02:00 PM", type: "Consultation", status: "pending" },
-  { id: 5, patient: "David Wilson", time: "03:30 PM", type: "Check-up", status: "confirmed" },
+  { id: 1, patient: "John Smith", time: "09:00 AM", type: "Consultation", status: "confirmed", doctor: "Dr. Tansukh Gosai", department: "General Physician" },
+  { id: 2, patient: "Sarah Johnson", time: "10:30 AM", type: "Follow-up", status: "confirmed", doctor: "Dr. Devang Gosai", department: "Ano Rectal Expert" },
+  { id: 3, patient: "Mike Davis", time: "11:15 AM", type: "Emergency", status: "urgent", doctor: "Dr. Dhara Gosai", department: "Dental Surgeon" },
+  { id: 4, patient: "Emily Brown", time: "02:00 PM", type: "Follow-up", status: "pending", doctor: "Dr. Tansukh Gosai", department: "General Physician" },
+  { id: 5, patient: "David Wilson", time: "03:30 PM", type: "Follow-up", status: "confirmed", doctor: "Dr. Devang Gosai", department: "Ano Rectal Expert" },
 ]
 
 const mockPatients = [
@@ -44,10 +45,81 @@ const mockPatients = [
 
 export default function DoctorDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [appointments, setAppointments] = useState(mockAppointments)
+
+  // Load appointments from localStorage with error handling
+  useEffect(() => {
+    const loadAppointments = () => {
+      try {
+        const storedAppointments = localStorage.getItem("appointments")
+        if (storedAppointments) {
+          const parsedAppointments = JSON.parse(storedAppointments)
+          setAppointments(parsedAppointments)
+        } else {
+          // Initialize empty appointments array if none exists
+          localStorage.setItem("appointments", JSON.stringify([]))
+          setAppointments([])
+        }
+      } catch (error) {
+        console.error("Error loading appointments:", error)
+        // Reset to empty array if there's an error
+        localStorage.setItem("appointments", JSON.stringify([]))
+        setAppointments([])
+      }
+    }
+
+    loadAppointments()
+
+    // Listen for new appointments and updates
+    const handleAppointmentAdded = () => {
+      loadAppointments()
+    }
+
+    const handleAppointmentUpdated = () => {
+      loadAppointments()
+    }
+
+    // Also listen for storage changes from other tabs/windows
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "appointments") {
+        loadAppointments()
+      }
+    }
+
+    window.addEventListener("appointmentAdded", handleAppointmentAdded)
+    window.addEventListener("appointmentUpdated", handleAppointmentUpdated)
+    window.addEventListener("storage", handleStorageChange)
+
+    return () => {
+      window.removeEventListener("appointmentAdded", handleAppointmentAdded)
+      window.removeEventListener("appointmentUpdated", handleAppointmentUpdated)
+      window.removeEventListener("storage", handleStorageChange)
+    }
+  }, [])
 
   const filteredPatients = mockPatients.filter((patient) =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase()),
   )
+
+  const updateAppointmentStatus = (appointmentId: number, newStatus: string) => {
+    setAppointments((prev) => {
+      const updatedAppointments = prev.map((apt) => 
+        apt.id === appointmentId ? { ...apt, status: newStatus } : apt
+      )
+      
+      // Save to localStorage
+      localStorage.setItem("appointments", JSON.stringify(updatedAppointments))
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent("appointmentUpdated"))
+      
+      return updatedAppointments
+    })
+  }
+
+  const markAppointmentAsDone = (appointmentId: number) => {
+    updateAppointmentStatus(appointmentId, "done")
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -69,28 +141,28 @@ export default function DoctorDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
       <Navigation />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Doctor Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">
-            Welcome back, Dr. Tansukh Gosai. Here's your overview for today.
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Doctor Dashboard</h1>
+          <p className="text-gray-600 dark:text-slate-400 mt-3">
+            Welcome back, Dr. Tansukh Gosai (General Physician). Here's your overview for today.
           </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          <Card className="bg-white dark:bg-slate-900/50 border-gray-200 dark:border-slate-700/50 shadow-sm dark:shadow-slate-900/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
-              <Users className="h-4 w-4 text-blue-600" />
+              <CardTitle className="text-sm font-medium dark:text-slate-200">Total Patients</CardTitle>
+              <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockStats.totalPatients}</div>
-              <p className="text-xs text-green-600 flex items-center mt-1">
+              <div className="text-2xl font-bold dark:text-slate-100">{mockStats.totalPatients}</div>
+              <p className="text-xs text-green-600 dark:text-green-400 flex items-center mt-1">
                 <TrendingUp className="h-3 w-3 mr-1" />
                 +12% from last month
               </p>
@@ -131,35 +203,37 @@ export default function DoctorDashboard() {
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-10">
           {/* Today's Appointments */}
-          <Card>
+          <Card className="bg-white dark:bg-slate-900/50 border-gray-200 dark:border-slate-700/50 shadow-sm dark:shadow-slate-900/20">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Clock className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="flex items-center space-x-2 dark:text-slate-100">
+                    <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     <span>Today's Appointments</span>
                   </CardTitle>
-                  <CardDescription>Your scheduled appointments for today</CardDescription>
+                  <CardDescription className="dark:text-slate-400">Your scheduled appointments for today</CardDescription>
                 </div>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Appointment
+                <Button size="sm" asChild>
+                  <Link href="/appointments/book">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Appointment
+                  </Link>
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockAppointments.map((appointment) => (
-                  <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                {appointments.map((appointment) => (
+                  <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700/50">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
-                        <div className="font-medium">{appointment.patient}</div>
+                        <div className="font-medium dark:text-slate-100">{appointment.patient}</div>
                         <Badge className={getStatusColor(appointment.status)}>{appointment.status}</Badge>
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        {appointment.time} • {appointment.type}
+                      <div className="text-sm text-gray-600 dark:text-slate-400 mt-1">
+                        {appointment.time} • {appointment.type} • {appointment.doctor}
                       </div>
                     </div>
                     <div className="flex space-x-2">
@@ -167,9 +241,18 @@ export default function DoctorDashboard() {
                         View
                       </Button>
                       {appointment.status === "confirmed" && (
-                        <Button size="sm">
+                        <Button 
+                          size="sm" 
+                          onClick={() => markAppointmentAsDone(appointment.id)}
+                          className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
+                        >
                           <CheckCircle className="h-4 w-4" />
                         </Button>
+                      )}
+                      {appointment.status === "done" && (
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                          Done
+                        </Badge>
                       )}
                     </div>
                   </div>
@@ -188,7 +271,7 @@ export default function DoctorDashboard() {
                     <span>Recent Patients</span>
                   </CardTitle>
                   <CardDescription>Patients you've seen recently</CardDescription>
-                </div>
+                </div>                                                                    
                 <div className="flex space-x-2">
                   <div className="relative">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
@@ -230,7 +313,7 @@ export default function DoctorDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <Card className="mt-8">
+        <Card className="mt-10">
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
             <CardDescription>Common tasks and shortcuts</CardDescription>

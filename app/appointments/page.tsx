@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Navigation } from "@/components/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import Link from "next/link"
 import {
   Calendar,
   Clock,
@@ -31,7 +32,7 @@ const mockAppointments = [
     duration: 30,
     type: "Consultation",
     status: "confirmed",
-    department: "Cardiology",
+    department: "General Physician",
   },
   {
     id: 2,
@@ -42,7 +43,7 @@ const mockAppointments = [
     duration: 45,
     type: "Follow-up",
     status: "done",
-    department: "Orthopedics",
+    department: "Ano Rectal Expert",
   },
   {
     id: 3,
@@ -53,7 +54,7 @@ const mockAppointments = [
     duration: 60,
     type: "Emergency",
     status: "urgent",
-    department: "Emergency",
+    department: "Dental Surgeon",
   },
   {
     id: 4,
@@ -62,9 +63,9 @@ const mockAppointments = [
     date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0], // Tomorrow
     time: "14:00",
     duration: 30,
-    type: "Check-up",
+    type: "Follow-up",
     status: "pending",
-    department: "General Medicine",
+    department: "General Physician",
   },
   {
     id: 5,
@@ -75,7 +76,7 @@ const mockAppointments = [
     duration: 30,
     type: "Consultation",
     status: "confirmed",
-    department: "Dermatology",
+    department: "Ano Rectal Expert",
   },
 ]
 
@@ -105,7 +106,57 @@ export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
   const [viewMode, setViewMode] = useState<"day" | "week">("day")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [appointments, setAppointments] = useState(mockAppointments)
+  const [appointments, setAppointments] = useState<any[]>([])
+
+  // Load appointments from localStorage with error handling
+  const loadAppointments = () => {
+    try {
+      const storedAppointments = localStorage.getItem("appointments")
+      if (storedAppointments) {
+        const parsedAppointments = JSON.parse(storedAppointments)
+        setAppointments(parsedAppointments)
+      } else {
+        // Initialize empty appointments array if none exists
+        localStorage.setItem("appointments", JSON.stringify([]))
+        setAppointments([])
+      }
+    } catch (error) {
+      console.error("Error loading appointments:", error)
+      // Reset to empty array if there's an error
+      localStorage.setItem("appointments", JSON.stringify([]))
+      setAppointments([])
+    }
+  }
+
+  useEffect(() => {
+    loadAppointments()
+
+    // Listen for new appointments and updates
+    const handleAppointmentAdded = () => {
+      loadAppointments()
+    }
+
+    const handleAppointmentUpdated = () => {
+      loadAppointments()
+    }
+
+    // Also listen for storage changes from other tabs/windows
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "appointments") {
+        loadAppointments()
+      }
+    }
+
+    window.addEventListener("appointmentAdded", handleAppointmentAdded)
+    window.addEventListener("appointmentUpdated", handleAppointmentUpdated)
+    window.addEventListener("storage", handleStorageChange)
+
+    return () => {
+      window.removeEventListener("appointmentAdded", handleAppointmentAdded)
+      window.removeEventListener("appointmentUpdated", handleAppointmentUpdated)
+      window.removeEventListener("storage", handleStorageChange)
+    }
+  }, [])
 
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0]
@@ -135,8 +186,24 @@ export default function AppointmentsPage() {
     return () => clearTimeout(timer)
   }, [])
 
+  const updateAppointmentStatus = (appointmentId: number, newStatus: string) => {
+    setAppointments((prev) => {
+      const updatedAppointments = prev.map((apt) => 
+        apt.id === appointmentId ? { ...apt, status: newStatus } : apt
+      )
+      
+      // Save to localStorage
+      localStorage.setItem("appointments", JSON.stringify(updatedAppointments))
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent("appointmentUpdated"))
+      
+      return updatedAppointments
+    })
+  }
+
   const markAsDone = (appointmentId: number) => {
-    setAppointments((prev) => prev.map((apt) => (apt.id === appointmentId ? { ...apt, status: "done" } : apt)))
+    updateAppointmentStatus(appointmentId, "done")
   }
 
   const filteredAppointments = appointments.filter((appointment) => {
@@ -194,7 +261,7 @@ export default function AppointmentsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navigation />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -207,9 +274,11 @@ export default function AppointmentsPage() {
                 {isToday ? "Today's Schedule" : "Manage hospital appointments and schedules"}
               </p>
             </div>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              New Appointment
+            <Button asChild className="bg-blue-600 hover:bg-blue-700">
+              <Link href="/appointments/book">
+                <Plus className="h-4 w-4 mr-2" />
+                New Appointment
+              </Link>
             </Button>
           </div>
         </div>
@@ -426,9 +495,11 @@ export default function AppointmentsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <Button className="w-full justify-start bg-transparent" variant="outline">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Book Appointment
+                    <Button asChild className="w-full justify-start bg-transparent" variant="outline">
+                      <Link href="/appointments/book">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Book Appointment
+                      </Link>
                     </Button>
                     <Button className="w-full justify-start bg-transparent" variant="outline">
                       <Calendar className="h-4 w-4 mr-2" />
