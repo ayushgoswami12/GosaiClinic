@@ -214,14 +214,14 @@ export default function HomePage() {
             <span>Appointments</span>
           </Link>
 
-          <Link
+          {/* <Link
             href="/records"
             className="flex items-center space-x-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg"
             onClick={() => setSidebarOpen(false)}
           >
             <FileText className="w-5 h-5" />
             <span>Medical Records</span>
-          </Link>
+          </Link> */}
 
           {/* Quick Actions Section */}
           <div className="pt-6 border-t dark:border-gray-700 mt-6">
