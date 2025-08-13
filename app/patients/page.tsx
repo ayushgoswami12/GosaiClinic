@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Navigation } from "@/components/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, Users, Download, Eye, Edit, Phone, Mail, MapPin, Calendar, Pill, X } from "lucide-react"
+import { Search, Filter, Users, Download, Eye, Edit, Phone, Mail, MapPin, Calendar, Pill, X, Printer } from "lucide-react"
 import * as XLSX from "xlsx"
+import Head from "next/head"
 
 interface Patient {
   id: string
@@ -52,6 +53,8 @@ export default function PatientsPage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [showMedicationModal, setShowMedicationModal] = useState(false)
   const [selectedPatientMedications, setSelectedPatientMedications] = useState<Prescription[]>([])
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState<Patient | null>(null)
 
   const loadPatients = () => {
     const storedPatients = localStorage.getItem("patients")
@@ -73,6 +76,13 @@ export default function PatientsPage() {
       window.removeEventListener("patientAdded", handlePatientAdded)
     }
   }, [])
+
+  // Ensure edit form syncs with selected patient when entering edit mode
+  useEffect(() => {
+    if (isEditing && selectedPatient) {
+      setEditForm({ ...selectedPatient })
+    }
+  }, [isEditing, selectedPatient])
 
   const filteredPatients = patients
     .filter((patient) => {
@@ -127,6 +137,37 @@ export default function PatientsPage() {
     XLSX.writeFile(workbook, fileName)
   }
 
+  const startEdit = (patient: Patient) => {
+    setSelectedPatient(patient)
+    setIsEditing(true)
+    setEditForm({ ...patient })
+  }
+
+  const cancelEdit = () => {
+    setIsEditing(false)
+    setEditForm(null)
+  }
+
+  const updateEditField = (field: keyof Patient, value: string) => {
+    if (!editForm) return
+    setEditForm({ ...editForm, [field]: value })
+  }
+
+  const saveEditedPatient = () => {
+    if (!editForm) return
+    // Basic validation
+    if (!editForm.firstName || !editForm.lastName || !editForm.phone) {
+      alert("First name, last name and phone are required")
+      return
+    }
+
+    const updatedPatients = patients.map((p) => (p.id === editForm.id ? { ...p, ...editForm } : p))
+    setPatients(updatedPatients)
+    localStorage.setItem("patients", JSON.stringify(updatedPatients))
+    setSelectedPatient(editForm)
+    setIsEditing(false)
+  }
+
   const calculateAge = (dateOfBirth: string) => {
     const today = new Date()
     const birthDate = new Date(dateOfBirth)
@@ -147,22 +188,154 @@ export default function PatientsPage() {
   }
 
   const showPatientMedications = (patient: Patient) => {
+    // Get medications for the patient using the helper function
+    const patientPrescriptions = getMedicationsForPatient(patient.id)
+    setSelectedPatientMedications(patientPrescriptions)
+    setSelectedPatient(patient)
+    setShowMedicationModal(true)
+  }
+
+  // Function to handle printing patient medication details
+  const handlePrint = () => {
+    // Show the print-friendly section and hide the regular content when printing
+    const printSection = document.querySelector('.print-section');
+    if (printSection) {
+      printSection.classList.remove('hidden');
+      printSection.classList.add('block');
+      
+      // Print the document
+      window.print();
+      
+      // After printing, hide the print section again
+      setTimeout(() => {
+        printSection.classList.remove('block');
+        printSection.classList.add('hidden');
+      }, 500);
+    } else {
+      window.print();
+    }
+  };
+  
+  // Function to get medications for a specific patient
+  const getMedicationsForPatient = (patientId: string): Prescription[] => {
     const storedPrescriptions = localStorage.getItem("prescriptions")
     if (storedPrescriptions) {
       const prescriptions: Prescription[] = JSON.parse(storedPrescriptions)
-      const patientPrescriptions = prescriptions.filter((prescription) => prescription.patientId === patient.id)
-      setSelectedPatientMedications(patientPrescriptions)
-      setSelectedPatient(patient)
-      setShowMedicationModal(true)
-    } else {
-      setSelectedPatientMedications([])
-      setSelectedPatient(patient)
-      setShowMedicationModal(true)
+      return prescriptions.filter((prescription) => prescription.patientId === patientId)
     }
+    return []
+  }
+
+  // Function to directly show print layout without showing the modal
+  const directPrint = (patient: Patient) => {
+    setSelectedPatient(patient)
+    // Fetch medications for the patient
+    const medications = getMedicationsForPatient(patient.id)
+    setSelectedPatientMedications(medications)
+
+    // Wait for state updates to complete
+    setTimeout(() => {
+      // Show the global print-friendly section
+      const printSection = document.querySelector('.print-section-global')
+      if (printSection) {
+        printSection.classList.remove('hidden')
+        printSection.classList.add('block')
+
+        // Print the document
+        window.print()
+
+        // After printing, hide the print section again
+        setTimeout(() => {
+          printSection.classList.remove('block')
+          printSection.classList.add('hidden')
+        }, 500)
+      } else {
+        window.print()
+      }
+    }, 100)
   }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Head>
+        <style jsx global>{`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            .print-section, .print-section * {
+              visibility: visible;
+            }
+            .print-section {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+              background-color: white !important;
+              color: black !important;
+              padding: 20px;
+              font-size: 12pt;
+            }
+            .print-section .no-print {
+              display: none !important;
+            }
+            .print-header {
+              text-align: center;
+              margin-bottom: 20px;
+              padding-bottom: 10px;
+              border-bottom: 2px solid #000;
+            }
+            .print-header h1 {
+              font-size: 24pt;
+              margin-bottom: 5px;
+            }
+            .print-header h2 {
+              font-size: 18pt;
+            }
+            .print-patient-info {
+              margin-bottom: 30px;
+              padding: 15px;
+              border: 1px solid #ddd;
+              border-radius: 5px;
+              background-color: #f9f9f9;
+            }
+            .print-patient-info h3 {
+              font-size: 16pt;
+              margin-bottom: 10px;
+            }
+            .print-patient-info p {
+              margin-bottom: 5px;
+              font-size: 12pt;
+            }
+            .print-prescription {
+              page-break-inside: avoid;
+              margin-bottom: 30px;
+              padding: 15px;
+              border: 1px solid #ddd;
+              border-radius: 5px;
+            }
+            .print-prescription h4 {
+              font-size: 14pt;
+              margin-bottom: 5px;
+            }
+            .print-medication {
+              margin-bottom: 15px;
+              padding: 10px;
+              border: 1px solid #eee;
+              border-radius: 5px;
+              page-break-inside: avoid;
+            }
+            .print-medication h5 {
+              font-size: 13pt;
+              margin-bottom: 5px;
+            }
+            .print-medication p {
+              margin-bottom: 3px;
+              font-size: 11pt;
+            }
+          }
+        `}</style>
+      </Head>
       <Navigation />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
@@ -278,11 +451,34 @@ export default function PatientsPage() {
                             </div>
                           </div>
                           <div className="flex flex-row lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2">
-                            <Button size="sm" variant="outline" className="flex-1 lg:flex-none bg-transparent">
-                              <Eye className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
-                              <span className="text-xs lg:text-sm">View</span>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex-1 lg:flex-none bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-800 dark:text-blue-400"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                directPrint(patient)
+                              }}
+                            >
+                              <Printer className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
+                              <span className="text-xs lg:text-sm">Print</span>
                             </Button>
-                            <Button size="sm" variant="outline" className="flex-1 lg:flex-none bg-transparent">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex-1 lg:flex-none bg-transparent"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                startEdit(patient)
+                                // Scroll to patient details section on mobile
+                                if (window.innerWidth < 1024) {
+                                  const detailsCard = document.querySelector('.lg\\:col-span-1 .card')
+                                  if (detailsCard) {
+                                    ;(detailsCard as HTMLElement).scrollIntoView({ behavior: 'smooth' })
+                                  }
+                                }
+                              }}
+                            >
                               <Edit className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
                               <span className="text-xs lg:text-sm">Edit</span>
                             </Button>
@@ -319,86 +515,162 @@ export default function PatientsPage() {
               <CardContent>
                 {selectedPatient ? (
                   <div className="space-y-4 lg:space-y-6">
-                    <div>
-                      <h4 className="font-semibold text-base lg:text-lg mb-3">
-                        {selectedPatient.firstName} {selectedPatient.lastName}
-                      </h4>
-                      <div className="space-y-2 text-xs lg:text-sm">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium">Patient ID:</span>
-                          <span>{selectedPatient.id}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium">Age:</span>
-                          <span>{calculateAge(selectedPatient.dateOfBirth)} years</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium">Gender:</span>
-                          <span>{selectedPatient.gender}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium">DOB:</span>
-                          <span>{formatDate(selectedPatient.dateOfBirth)}</span>
-                        </div>
-                        {selectedPatient.bloodType && (
-                          <div className="flex items-center space-x-2">
-                            <span className="font-medium">Blood Type:</span>
-                            <span>{selectedPatient.bloodType}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h5 className="font-medium mb-2 text-sm lg:text-base">Contact Information</h5>
-                      <div className="space-y-2 text-xs lg:text-sm">
-                        <div className="flex items-center space-x-2">
-                          <Phone className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 dark:text-gray-500" />
-                          <span>{selectedPatient.phone}</span>
-                        </div>
-                        {selectedPatient.email && (
-                          <div className="flex items-center space-x-2">
-                            <Mail className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 dark:text-gray-500" />
-                            <span>{selectedPatient.email}</span>
-                          </div>
-                        )}
-                        <div className="flex items-start space-x-2">
-                          <MapPin className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 dark:text-gray-500 mt-0.5" />
-                          <span>{selectedPatient.address}</span>
-                        </div>
-                      </div>
-                    </div>
-
-               
-
-                    <div>
-                      <h5 className="font-medium mb-2 text-sm lg:text-base">Medical Information</h5>
-                      <div className="space-y-2 text-xs lg:text-sm">
+                    {!isEditing && (
+                      <>
                         <div>
-                          <span className="font-medium">Medical History:</span>
-                          <p className="text-gray-600 dark:text-gray-400">
-                            {selectedPatient.medicalHistory || "None reported"}
-                          </p>
+                          <h4 className="font-semibold text-base lg:text-lg mb-3">
+                            {selectedPatient.firstName} {selectedPatient.lastName}
+                          </h4>
+                          <div className="space-y-2 text-xs lg:text-sm">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium">Patient ID:</span>
+                              <span>{selectedPatient.id}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium">Age:</span>
+                              <span>{calculateAge(selectedPatient.dateOfBirth)} years</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium">Gender:</span>
+                              <span>{selectedPatient.gender}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium">DOB:</span>
+                              <span>{formatDate(selectedPatient.dateOfBirth)}</span>
+                            </div>
+                            {selectedPatient.bloodType && (
+                              <div className="flex items-center space-x-2">
+                                <span className="font-medium">Blood Type:</span>
+                                <span>{selectedPatient.bloodType}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
+
                         <div>
-                          <span className="font-medium">Allergies:</span>
-                          <p className="text-gray-600 dark:text-gray-400">
-                            {selectedPatient.allergies || "None reported"}
-                          </p>
+                          <h5 className="font-medium mb-2 text-sm lg:text-base">Contact Information</h5>
+                          <div className="space-y-2 text-xs lg:text-sm">
+                            <div className="flex items-center space-x-2">
+                              <Phone className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 dark:text-gray-500" />
+                              <span>{selectedPatient.phone}</span>
+                            </div>
+                            {selectedPatient.email && (
+                              <div className="flex items-center space-x-2">
+                                <Mail className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 dark:text-gray-500" />
+                                <span>{selectedPatient.email}</span>
+                              </div>
+                            )}
+                            <div className="flex items-start space-x-2">
+                              <MapPin className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 dark:text-gray-500 mt-0.5" />
+                              <span>{selectedPatient.address}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h5 className="font-medium mb-2 text-sm lg:text-base">Medical Information</h5>
+                          <div className="space-y-2 text-xs lg:text-sm">
+                            <div>
+                              <span className="font-medium">Medical History:</span>
+                              <p className="text-gray-600 dark:text-gray-400">
+                                {selectedPatient.medicalHistory || "None reported"}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="font-medium">Allergies:</span>
+                              <p className="text-gray-600 dark:text-gray-400">
+                                {selectedPatient.allergies || "None reported"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Button className="w-full" asChild>
+                            <a href={`/appointments/book?patientId=${selectedPatient.id}`}>
+                              <Calendar className="h-4 w-4 mr-2" />
+                              Schedule Appointment
+                            </a>
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            className="w-full bg-transparent dark:bg-transparent"
+                            onClick={() => startEdit(selectedPatient)}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Update Information
+                          </Button>
+                          <Button 
+                            variant="secondary" 
+                            className="w-full"
+                            onClick={() => directPrint(selectedPatient)}
+                          >
+                            <Printer className="h-4 w-4 mr-2" />
+                            Print Details
+                          </Button>
+                        </div>
+                      </>
+                    )}
+
+                    {isEditing && editForm && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-medium">First Name</label>
+                            <Input value={editForm.firstName} onChange={(e) => updateEditField("firstName", e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium">Last Name</label>
+                            <Input value={editForm.lastName} onChange={(e) => updateEditField("lastName", e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium">Date of Birth</label>
+                            <Input type="date" value={editForm.dateOfBirth} onChange={(e) => updateEditField("dateOfBirth", e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium">Gender</label>
+                            <Select value={editForm.gender} onValueChange={(v) => updateEditField("gender", v)}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="male">Male</SelectItem>
+                                <SelectItem value="female">Female</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium">Phone</label>
+                            <Input value={editForm.phone} onChange={(e) => updateEditField("phone", e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium">Email</label>
+                            <Input type="email" value={editForm.email || ""} onChange={(e) => updateEditField("email", e.target.value)} />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-xs font-medium">Address</label>
+                            <Input value={editForm.address} onChange={(e) => updateEditField("address", e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium">Blood Type</label>
+                            <Input value={editForm.bloodType || ""} onChange={(e) => updateEditField("bloodType", e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium">Allergies</label>
+                            <Input value={editForm.allergies || ""} onChange={(e) => updateEditField("allergies", e.target.value)} />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-xs font-medium">Medical History</label>
+                            <Input value={editForm.medicalHistory || ""} onChange={(e) => updateEditField("medicalHistory", e.target.value)} />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button onClick={saveEditedPatient} className="flex-1">Save</Button>
+                          <Button variant="outline" onClick={cancelEdit} className="flex-1">Cancel</Button>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Button className="w-full">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Schedule Appointment
-                      </Button>
-                      <Button variant="outline" className="w-full bg-transparent dark:bg-transparent">
-                        <Edit className="h-4 w-4 mr-2" />
-                        Update Information
-                      </Button>
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center text-gray-500 dark:text-gray-400 py-8 lg:py-12">
@@ -425,11 +697,87 @@ export default function PatientsPage() {
                       {selectedPatient?.firstName} {selectedPatient?.lastName} - ID: {selectedPatient?.id}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setShowMedicationModal(false)}>
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-800 dark:text-blue-400"
+                      onClick={handlePrint}
+                    >
+                      <Printer className="h-4 w-4 mr-2" />
+                      Print
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setShowMedicationModal(false)} className="no-print">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
+                {/* Print-friendly version that will only be visible when printing */}
+                <div className="print-section hidden">
+                  
+                  <div className="print-patient-info">
+                    <h3 className="text-lg font-bold mb-2">Patient Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p><strong>Name:</strong> {selectedPatient?.firstName} {selectedPatient?.lastName}</p>
+                        <p><strong>ID:</strong> {selectedPatient?.id}</p>
+                        <p><strong>Gender:</strong> {selectedPatient?.gender}</p>
+                        <p><strong>Date of Birth:</strong> {formatDate(selectedPatient?.dateOfBirth || '')}</p>
+                        <p><strong>Age:</strong> {calculateAge(selectedPatient?.dateOfBirth || '')} years</p>
+                      </div>
+                      <div>
+                        <p><strong>Phone:</strong> {selectedPatient?.phone}</p>
+                        <p><strong>Email:</strong> {selectedPatient?.email || 'Not provided'}</p>
+                        <p><strong>Address:</strong> {selectedPatient?.address}</p>
+                        <p><strong>Blood Type:</strong> {selectedPatient?.bloodType || 'Not specified'}</p>
+                        <p><strong>Allergies:</strong> {selectedPatient?.allergies || 'None reported'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {selectedPatientMedications.length === 0 ? (
+                    <div className="text-center py-6">
+                      <h3 className="text-lg font-medium mb-2">No medications found</h3>
+                      <p>This patient has no prescription history yet</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <h3 className="text-lg font-bold mb-4">Medication History</h3>
+                      {selectedPatientMedications.map((prescription) => (
+                        <div key={prescription.id} className="print-prescription">
+                          <div className="mb-2 pb-2 border-b">
+                            <h4 className="text-lg font-semibold">Prescription #{prescription.id}</h4>
+                            <p>Prescribed by {prescription.doctorName} on {new Date(prescription.date).toLocaleDateString()}</p>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            {prescription.medications.map((medication, index) => (
+                              <div key={index} className="print-medication">
+                                <h5 className="font-semibold text-base mb-2">{medication.name}</h5>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p><strong>Dosage:</strong> {medication.dosage}</p>
+                                    <p><strong>Duration:</strong> {medication.duration}</p>
+                                  </div>
+                                  <div>
+                                    <p><strong>Frequency:</strong> {medication.frequency.join(', ')}</p>
+                                    {medication.instructions && (
+                                      <p><strong>Instructions:</strong> {medication.instructions}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            {/* Notes intentionally omitted for print: only details and medications */}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Regular view for screen display */}
                 {selectedPatientMedications.length === 0 ? (
                   <div className="text-center py-12">
                     <Pill className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
@@ -521,7 +869,72 @@ export default function PatientsPage() {
             </div>
           </div>
         )}
+
+        {/* Global print-only section for direct printing from top-level Print buttons */}
+        {selectedPatient && (
+          <div className="print-section-global hidden">
+
+            <div className="print-patient-info">
+              <h3 className="text-lg font-bold mb-2">Patient Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p><strong>Name:</strong> {selectedPatient.firstName} {selectedPatient.lastName}</p>
+                  <p><strong>ID:</strong> {selectedPatient.id}</p>
+                  <p><strong>Gender:</strong> {selectedPatient.gender}</p>
+                  <p><strong>Date of Birth:</strong> {formatDate(selectedPatient.dateOfBirth)}</p>
+                  <p><strong>Age:</strong> {calculateAge(selectedPatient.dateOfBirth)} years</p>
+                </div>
+                <div>
+                  <p><strong>Phone:</strong> {selectedPatient.phone}</p>
+                  <p><strong>Email:</strong> {selectedPatient.email || 'Not provided'}</p>
+                  <p><strong>Address:</strong> {selectedPatient.address}</p>
+                  <p><strong>Blood Type:</strong> {selectedPatient.bloodType || 'Not specified'}</p>
+                  <p><strong>Allergies:</strong> {selectedPatient.allergies || 'None reported'}</p>
+                </div>
+              </div>
+            </div>
+
+            {selectedPatientMedications.length === 0 ? (
+              <div className="text-center py-6">
+                <h3 className="text-lg font-medium mb-2">No medications found</h3>
+                <p>This patient has no prescription history yet</p>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-lg font-bold mb-4">Medication History</h3>
+                {selectedPatientMedications.map((prescription) => (
+                  <div key={prescription.id} className="print-prescription">
+                    <div className="mb-2 pb-2 border-b">
+                      <h4 className="text-lg font-semibold">Prescription #{prescription.id}</h4>
+                      <p>Prescribed by {prescription.doctorName} on {new Date(prescription.date).toLocaleDateString()}</p>
+                    </div>
+                    <div className="space-y-4">
+                      {prescription.medications.map((medication, index) => (
+                        <div key={index} className="print-medication">
+                          <h5 className="font-semibold text-base mb-2">{medication.name}</h5>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p><strong>Dosage:</strong> {medication.dosage}</p>
+                              <p><strong>Duration:</strong> {medication.duration}</p>
+                            </div>
+                            <div>
+                              <p><strong>Frequency:</strong> {medication.frequency.join(', ')}</p>
+                              {medication.instructions && (
+                                <p><strong>Instructions:</strong> {medication.instructions}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
 }
+

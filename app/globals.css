@@ -166,3 +166,35 @@
   background: linear-gradient(180deg, oklch(0.15 0.005 240), oklch(0.12 0.005 240));
   border-right: 1px solid oklch(0.22 0.005 240);
 }
+
+/* Print styles: show only dedicated print sections */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Show print sections */
+  .print-section,
+  .print-section *,
+  .print-section-global,
+  .print-section-global * {
+    visibility: visible !important;
+  }
+
+  /* Position print sections at top-left for clean output */
+  .print-section,
+  .print-section-global {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    padding: 16px;
+    background: white;
+  }
+
+  /* Explicitly hide elements marked as no-print */
+  .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
