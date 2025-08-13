@@ -461,10 +461,7 @@ export default function PatientRegistration() {
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <Label>Medications</Label>
-                      <Button type="button" onClick={addMedication} variant="outline" size="sm">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Medication
-                      </Button>
+                      
                     </div>
                     {medications.map((medication, index) => (
                       <Card key={index} className="mb-4">
@@ -570,17 +567,20 @@ export default function PatientRegistration() {
                                 placeholder="e.g., Take after meals"
                               />
                             </div>
+                            
                           </div>
+                          
                           {medications.length > 1 && (
                             <Button
                               type="button"
                               onClick={() => removeMedication(index)}
                               variant="destructive"
                               size="sm"
-                              className="mt-4"
+                              className="mt-4 hover:cursor-pointer hover:bg-red-500 "
                             >
                               Remove Medication
                             </Button>
+                            
                           )}
                         </CardContent>
                       </Card>
@@ -597,6 +597,13 @@ export default function PatientRegistration() {
                       rows={3}
                     />
                   </div>
+                   <div className="flex justify-between items-center mb-4">
+                     
+                      <Button type="button" onClick={addMedication} variant="outline" size="sm" className="bg-green-500 hover:cursor-pointer hover:bg-green-400">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Medication
+                      </Button>
+                    </div>
                 </CardContent>
               )}
             </Card>
