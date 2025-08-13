@@ -14,7 +14,7 @@ interface Patient {
   id: string
   firstName: string
   lastName: string
-  dateOfBirth: string
+  age: string
   gender: string
   phone: string
   email: string
@@ -81,133 +81,21 @@ export default function PatientsPage() {
     }
   }, [isEditing, selectedPatient])
 
-  // Comprehensive date parsing function
-  const parseDate = (dateString: string): Date | null => {
-    if (!dateString || dateString.trim() === "") {
-      return null
-    }
-
-    const cleanDate = dateString.trim()
-    let parsedDate: Date | null = null
-
-    try {
-      // Try different date formats
-
-      // Format 1: YYYY-MM-DD (HTML date input format)
-      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(cleanDate)) {
-        parsedDate = new Date(cleanDate)
-      }
-
-      // Format 2: MM/DD/YYYY or M/D/YYYY
-      else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(cleanDate)) {
-        const parts = cleanDate.split("/")
-        const month = Number.parseInt(parts[0]) - 1 // JavaScript months are 0-indexed
-        const day = Number.parseInt(parts[1])
-        const year = Number.parseInt(parts[2])
-        parsedDate = new Date(year, month, day)
-      }
-
-      // Format 3: DD/MM/YYYY or D/M/YYYY (European format)
-      else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(cleanDate)) {
-        // This is ambiguous with MM/DD/YYYY, but we'll assume MM/DD/YYYY is more common
-        // If you need DD/MM/YYYY, you can modify this logic
-        const parts = cleanDate.split("/")
-        const month = Number.parseInt(parts[0]) - 1
-        const day = Number.parseInt(parts[1])
-        const year = Number.parseInt(parts[2])
-        parsedDate = new Date(year, month, day)
-      }
-
-      // Format 4: DD-MM-YYYY or D-M-YYYY
-      else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(cleanDate)) {
-        const parts = cleanDate.split("-")
-        const day = Number.parseInt(parts[0])
-        const month = Number.parseInt(parts[1]) - 1
-        const year = Number.parseInt(parts[2])
-        parsedDate = new Date(year, month, day)
-      }
-
-      // Format 5: DD.MM.YYYY or D.M.YYYY
-      else if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(cleanDate)) {
-        const parts = cleanDate.split(".")
-        const day = Number.parseInt(parts[0])
-        const month = Number.parseInt(parts[1]) - 1
-        const year = Number.parseInt(parts[2])
-        parsedDate = new Date(year, month, day)
-      }
-
-      // Format 6: Try native Date parsing as fallback
-      else {
-        parsedDate = new Date(cleanDate)
-      }
-
-      // Validate the parsed date
-      if (parsedDate && !isNaN(parsedDate.getTime())) {
-        // Check if the date is reasonable (not in the future, not too far in the past)
-        const now = new Date()
-        const minDate = new Date(1900, 0, 1) // January 1, 1900
-
-        if (parsedDate <= now && parsedDate >= minDate) {
-          return parsedDate
-        }
-      }
-    } catch (error) {
-      console.error("Error parsing date:", error)
-    }
-
-    return null
-  }
-
-  // Robust age calculation function
-  const calculateAge = (dateOfBirth: string): number => {
-    const birthDate = parseDate(dateOfBirth)
-
-    if (!birthDate) {
-      console.warn("Could not parse date of birth:", dateOfBirth)
-      return 0
-    }
-
-    const today = new Date()
-    let age = today.getFullYear() - birthDate.getFullYear()
-    const monthDiff = today.getMonth() - birthDate.getMonth()
-
-    // Adjust age if birthday hasn't occurred this year
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--
-    }
-
-    // Ensure age is not negative
-    return Math.max(0, age)
-  }
-
   // Format date for display
   const formatDate = (dateString: string): string => {
-    const date = parseDate(dateString)
-
-    if (!date) {
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) {
+        return "Invalid date"
+      }
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    } catch (error) {
       return "Invalid date"
     }
-
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-  }
-
-  // Format date for HTML input (YYYY-MM-DD)
-  const formatDateForInput = (dateString: string): string => {
-    const date = parseDate(dateString)
-
-    if (!date) {
-      return ""
-    }
-
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-
-    return `${year}-${month}-${day}`
   }
 
   // Function to determine medicine category based on name
@@ -303,8 +191,7 @@ export default function PatientsPage() {
       "First Name": patient.firstName,
       "Last Name": patient.lastName,
       "Full Name": `${patient.firstName} ${patient.lastName}`,
-      "Date of Birth": patient.dateOfBirth,
-      Age: calculateAge(patient.dateOfBirth),
+      Age: patient.age,
       Gender: patient.gender,
       Phone: patient.phone,
       Email: patient.email || "Not provided",
@@ -346,8 +233,15 @@ export default function PatientsPage() {
 
   const saveEditedPatient = () => {
     if (!editForm) return
-    if (!editForm.firstName || !editForm.lastName || !editForm.phone) {
-      alert("First name, last name and phone are required")
+    if (!editForm.firstName || !editForm.lastName || !editForm.phone || !editForm.age) {
+      alert("First name, last name, phone, and age are required")
+      return
+    }
+
+    // Validate age
+    const ageNum = Number.parseInt(editForm.age)
+    if (isNaN(ageNum) || ageNum < 0 || ageNum > 150) {
+      alert("Please enter a valid age between 0 and 150.")
       return
     }
 
@@ -608,6 +502,10 @@ export default function PatientsPage() {
                     <span class="detail-value">${selectedPatient.id}</span>
                 </div>
                 <div class="detail-item">
+                    <span class="detail-label">Age:</span>
+                    <span class="detail-value">${selectedPatient.age} years</span>
+                </div>
+                <div class="detail-item">
                     <span class="detail-label">Gender:</span>
                     <span class="detail-value">${selectedPatient.gender}</span>
                 </div>
@@ -755,7 +653,6 @@ export default function PatientsPage() {
                 ) : (
                   <div className="space-y-4">
                     {filteredPatients.map((patient) => {
-                      const age = calculateAge(patient.dateOfBirth)
                       return (
                         <div
                           key={patient.id}
@@ -774,7 +671,7 @@ export default function PatientsPage() {
                                 </h3>
                                 <div className="flex items-center space-x-2">
                                   <span className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">
-                                    {age} years, {patient.gender}
+                                    {patient.age} years, {patient.gender}
                                   </span>
                                   <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 text-xs">
                                     ID: {patient.id}
@@ -787,9 +684,6 @@ export default function PatientsPage() {
                                 </p>
                                 <p>
                                   <strong>Email:</strong> {patient.email || "Not provided"}
-                                </p>
-                                <p>
-                                  <strong>DOB:</strong> {formatDate(patient.dateOfBirth)}
                                 </p>
                                 <p>
                                   <strong>Registered:</strong> {formatDate(patient.registrationDate)}
@@ -874,17 +768,11 @@ export default function PatientsPage() {
                             </div>
                             <div className="flex items-center space-x-2">
                               <span className="font-medium">Age:</span>
-                              <span className="font-semibold text-blue-600">
-                                {calculateAge(selectedPatient.dateOfBirth)} years
-                              </span>
+                              <span className="font-semibold text-blue-600">{selectedPatient.age} years</span>
                             </div>
                             <div className="flex items-center space-x-2">
                               <span className="font-medium">Gender:</span>
                               <span>{selectedPatient.gender}</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className="font-medium">DOB:</span>
-                              <span>{formatDate(selectedPatient.dateOfBirth)}</span>
                             </div>
                             {selectedPatient.bloodType && (
                               <div className="flex items-center space-x-2">
@@ -978,11 +866,13 @@ export default function PatientsPage() {
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-medium">Date of Birth</label>
+                            <label className="text-xs font-medium">Age (years)</label>
                             <Input
-                              type="date"
-                              value={formatDateForInput(editForm.dateOfBirth)}
-                              onChange={(e) => updateEditField("dateOfBirth", e.target.value)}
+                              type="number"
+                              min="0"
+                              max="150"
+                              value={editForm.age}
+                              onChange={(e) => updateEditField("age", e.target.value)}
                             />
                           </div>
                           <div>
@@ -1072,8 +962,8 @@ export default function PatientsPage() {
                       Medication History
                     </h2>
                     <p className="text-sm lg:text-base text-gray-600 dark:text-gray-300">
-                      {selectedPatient?.firstName} {selectedPatient?.lastName} - Age:{" "}
-                      {calculateAge(selectedPatient.dateOfBirth)} years - ID: {selectedPatient?.id}
+                      {selectedPatient?.firstName} {selectedPatient?.lastName} - Age: {selectedPatient?.age} years - ID:{" "}
+                      {selectedPatient?.id}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -1210,6 +1100,9 @@ export default function PatientsPage() {
                         </div>
                         <div className="mb-2">
                           <strong>ID:</strong> {selectedPatient.id}
+                        </div>
+                        <div className="mb-2">
+                          <strong>Age:</strong> {selectedPatient.age} years
                         </div>
                         <div className="mb-2">
                           <strong>Gender:</strong> {selectedPatient.gender}

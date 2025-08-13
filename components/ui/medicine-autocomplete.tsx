@@ -4,136 +4,135 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { Check, ChevronDown } from "lucide-react"
 
 interface MedicineAutocompleteProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
-  className?: string
 }
 
 export function MedicineAutocomplete({
   value,
   onChange,
-  placeholder = "Enter medicine name...",
-  className,
+  placeholder = "Type medicine name...",
 }: MedicineAutocompleteProps) {
+  const [isOpen, setIsOpen] = useState(false)
   const [suggestions, setSuggestions] = useState<string[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Load medicines from localStorage
+  // Default medicine database
+  const defaultMedicines = [
+    "Paracetamol 500mg",
+    "Ibuprofen 400mg",
+    "Amoxicillin 500mg",
+    "Azithromycin 250mg",
+    "Omeprazole 20mg",
+    "Pantoprazole 40mg",
+    "Cetirizine 10mg",
+    "Loratadine 10mg",
+    "Metformin 500mg",
+    "Amlodipine 5mg",
+    "Atenolol 50mg",
+    "Aspirin 75mg",
+    "Clopidogrel 75mg",
+    "Simvastatin 20mg",
+    "Atorvastatin 20mg",
+    "Levothyroxine 50mcg",
+    "Prednisolone 5mg",
+    "Dexamethasone 0.5mg",
+    "Salbutamol 100mcg",
+    "Montelukast 10mg",
+    "Ranitidine 150mg",
+    "Domperidone 10mg",
+    "Loperamide 2mg",
+    "Multivitamin",
+    "Vitamin D3 1000IU",
+    "Calcium Carbonate 500mg",
+    "Iron Sulfate 200mg",
+    "Folic Acid 5mg",
+    "Vitamin B12 1000mcg",
+    "Cough Syrup",
+    "Expectorant Syrup",
+    "Antacid Syrup",
+    "ORS Powder",
+    "Zinc Sulfate 20mg",
+    "Diclofenac 50mg",
+    "Tramadol 50mg",
+    "Gabapentin 300mg",
+    "Fluconazole 150mg",
+    "Ciprofloxacin 500mg",
+    "Norfloxacin 400mg",
+    "Doxycycline 100mg",
+    "Erythromycin 250mg",
+    "Clarithromycin 500mg",
+    "Furosemide 40mg",
+    "Spironolactone 25mg",
+    "Digoxin 0.25mg",
+    "Warfarin 5mg",
+    "Heparin 5000IU",
+    "Insulin Glargine",
+    "Insulin Aspart",
+    "Glimepiride 2mg",
+    "Gliclazide 80mg",
+  ]
+
+  // Load suggestions from localStorage and merge with defaults
   useEffect(() => {
-    const loadMedicines = () => {
-      const storedMedicines = localStorage.getItem("medicines")
-      if (storedMedicines) {
-        setSuggestions(JSON.parse(storedMedicines))
-      } else {
-        // Default medicines if none exist
-        const defaultMedicines = [
-          "Paracetamol 500mg",
-          "Paracetamol 650mg",
-          "Ibuprofen 400mg",
-          "Amoxicillin 500mg",
-          "Azithromycin 250mg",
-          "Omeprazole 20mg",
-          "Pantoprazole 40mg",
-          "Cough Syrup 100ml",
-          "Multivitamin Tablet",
-          "Vitamin D3 60000 IU",
-          "Iron Tablet 100mg",
-          "Calcium Carbonate 500mg",
-        ]
+    const loadSuggestions = () => {
+      try {
+        const storedPrescriptions = localStorage.getItem("prescriptions")
+        const customMedicines = new Set<string>()
+
+        if (storedPrescriptions) {
+          const prescriptions = JSON.parse(storedPrescriptions)
+          prescriptions.forEach((prescription: any) => {
+            prescription.medications?.forEach((medication: any) => {
+              if (medication.name && medication.name.trim()) {
+                customMedicines.add(medication.name.trim())
+              }
+            })
+          })
+        }
+
+        // Combine default medicines with custom ones, remove duplicates
+        const allMedicines = [...new Set([...defaultMedicines, ...Array.from(customMedicines)])]
+        setSuggestions(allMedicines.sort())
+      } catch (error) {
+        console.error("Error loading medicine suggestions:", error)
         setSuggestions(defaultMedicines)
-        localStorage.setItem("medicines", JSON.stringify(defaultMedicines))
       }
     }
 
-    loadMedicines()
+    loadSuggestions()
 
-    // Listen for medicine updates
-    const handleMedicineUpdate = () => {
-      loadMedicines()
+    // Listen for prescription updates
+    const handlePrescriptionAdded = () => {
+      loadSuggestions()
     }
 
-    window.addEventListener("medicineAdded", handleMedicineUpdate)
+    window.addEventListener("prescriptionAdded", handlePrescriptionAdded)
     return () => {
-      window.removeEventListener("medicineAdded", handleMedicineUpdate)
+      window.removeEventListener("prescriptionAdded", handlePrescriptionAdded)
     }
   }, [])
 
   // Filter suggestions based on input
   useEffect(() => {
-    if (value.trim() === "") {
-      setFilteredSuggestions([])
-      return
+    if (!value.trim()) {
+      setFilteredSuggestions(suggestions.slice(0, 10)) // Show first 10 when empty
+    } else {
+      const filtered = suggestions
+        .filter((medicine) => medicine.toLowerCase().includes(value.toLowerCase()))
+        .slice(0, 10) // Limit to 10 suggestions
+      setFilteredSuggestions(filtered)
     }
-
-    const filtered = suggestions.filter((medicine) => medicine.toLowerCase().includes(value.toLowerCase())).slice(0, 10) // Limit to 10 suggestions
-
-    setFilteredSuggestions(filtered)
   }, [value, suggestions])
 
-  // Handle input change
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
-    onChange(newValue)
-    setShowSuggestions(true)
-  }
-
-  // Handle suggestion selection
-  const handleSuggestionClick = (suggestion: string) => {
-    onChange(suggestion)
-    setShowSuggestions(false)
-    inputRef.current?.focus()
-  }
-
-  // Handle input blur
-  const handleInputBlur = () => {
-    // Delay hiding suggestions to allow for clicks
-    setTimeout(() => {
-      setShowSuggestions(false)
-
-      // Save new medicine if it doesn't exist
-      if (value.trim() && !suggestions.some((med) => med.toLowerCase() === value.toLowerCase())) {
-        const updatedMedicines = [...suggestions, value.trim()]
-        setSuggestions(updatedMedicines)
-        localStorage.setItem("medicines", JSON.stringify(updatedMedicines))
-
-        // Dispatch event to notify other components
-        window.dispatchEvent(new CustomEvent("medicineAdded"))
-      }
-    }, 200)
-  }
-
-  // Handle input focus
-  const handleInputFocus = () => {
-    if (filteredSuggestions.length > 0) {
-      setShowSuggestions(true)
-    }
-  }
-
-  // Handle dropdown toggle
-  const handleDropdownToggle = () => {
-    if (showSuggestions) {
-      setShowSuggestions(false)
-    } else {
-      setShowSuggestions(true)
-      inputRef.current?.focus()
-    }
-  }
-
-  // Handle keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      setShowSuggestions(false)
-    }
-  }
-
-  // Click outside to close
+  // Handle click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -142,7 +141,7 @@ export function MedicineAutocomplete({
         inputRef.current &&
         !inputRef.current.contains(event.target as Node)
       ) {
-        setShowSuggestions(false)
+        setIsOpen(false)
       }
     }
 
@@ -152,31 +151,53 @@ export function MedicineAutocomplete({
     }
   }, [])
 
-  const isNewMedicine = value.trim() && !suggestions.some((med) => med.toLowerCase() === value.toLowerCase())
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value
+    onChange(newValue)
+    setIsOpen(true)
+  }
+
+  const handleSuggestionClick = (suggestion: string) => {
+    onChange(suggestion)
+    setIsOpen(false)
+    inputRef.current?.focus()
+  }
+
+  const handleInputFocus = () => {
+    setIsOpen(true)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      setIsOpen(false)
+    }
+  }
 
   return (
     <div className="relative">
       <div className="relative">
         <Input
           ref={inputRef}
+          type="text"
           value={value}
           onChange={handleInputChange}
-          onBlur={handleInputBlur}
           onFocus={handleInputFocus}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={className}
+          className="pr-8"
         />
-        <button
+        <Button
           type="button"
-          onClick={handleDropdownToggle}
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          variant="ghost"
+          size="sm"
+          className="absolute right-0 top-0 h-full px-2 hover:bg-transparent"
+          onClick={() => setIsOpen(!isOpen)}
         >
-          <ChevronDown className="h-4 w-4" />
-        </button>
+          <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        </Button>
       </div>
 
-      {showSuggestions && filteredSuggestions.length > 0 && (
+      {isOpen && filteredSuggestions.length > 0 && (
         <div
           ref={dropdownRef}
           className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-y-auto"
@@ -184,19 +205,22 @@ export function MedicineAutocomplete({
           {filteredSuggestions.map((suggestion, index) => (
             <div
               key={index}
-              onClick={() => handleSuggestionClick(suggestion)}
               className="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between text-sm"
+              onClick={() => handleSuggestionClick(suggestion)}
             >
               <span>{suggestion}</span>
-              {value.toLowerCase() === suggestion.toLowerCase() && <Check className="h-4 w-4 text-green-600" />}
+              {value === suggestion && <Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
             </div>
           ))}
-        </div>
-      )}
 
-      {isNewMedicine && (
-        <div className="mt-1 text-xs text-blue-600 dark:text-blue-400">
-          💡 New medicine will be saved for future suggestions
+          {!filteredSuggestions.some((s) => s.toLowerCase() === value.toLowerCase()) && value.trim() && (
+            <div
+              className="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-sm border-t border-gray-200 dark:border-gray-700 text-blue-600 dark:text-blue-400 font-medium"
+              onClick={() => handleSuggestionClick(value)}
+            >
+              + Add "{value}" as new medicine
+            </div>
+          )}
         </div>
       )}
     </div>

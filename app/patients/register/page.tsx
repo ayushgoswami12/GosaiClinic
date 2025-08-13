@@ -22,12 +22,11 @@ interface PatientData {
   phone: string
   email: string
   address: string
-  // emergencyContact: string
-  // emergencyPhone: string
   bloodType: string
   allergies: string
   medicalHistory: string
   dateOfVisit: string
+  registrationDate: string
 }
 
 interface Prescription {
@@ -57,8 +56,6 @@ export default function PatientRegistration() {
     phone: "",
     email: "",
     address: "",
-    // emergencyContact: "",
-    // emergencyPhone: "",
     bloodType: "",
     allergies: "",
     medicalHistory: "",
@@ -128,19 +125,17 @@ export default function PatientRegistration() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const requiredFields = [
-      "firstName",
-      "lastName",
-      "age",
-      "gender",
-      "phone",
-      "address",
-      // "emergencyContact",
-      // "emergencyPhone",
-    ]
+    const requiredFields = ["firstName", "lastName", "age", "gender", "phone", "address"]
     const missingFields = requiredFields.filter((field) => !formData[field as keyof typeof formData])
     if (missingFields.length > 0) {
       alert("Please fill in all required fields.")
+      return
+    }
+
+    // Validate age is a positive number
+    const ageNum = Number.parseInt(formData.age)
+    if (isNaN(ageNum) || ageNum < 0 || ageNum > 150) {
+      alert("Please enter a valid age between 0 and 150.")
       return
     }
 
@@ -206,8 +201,6 @@ export default function PatientRegistration() {
         phone: "",
         email: "",
         address: "",
-        // emergencyContact: "",
-        // emergencyPhone: "",
         bloodType: "",
         allergies: "",
         medicalHistory: "",
@@ -291,7 +284,7 @@ export default function PatientRegistration() {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="age">Current Age *</Label>
+                    <Label htmlFor="age">Age (in years) *</Label>
                     <Input
                       id="age"
                       type="number"
