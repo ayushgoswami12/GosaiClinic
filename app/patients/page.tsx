@@ -490,42 +490,56 @@ export default function PatientsPage() {
     </div>
     
     <div class="patient-info">
-        <h2>📋 Patient Information</h2>
-        <div class="patient-details">
-            <div>
-                <div class="detail-item">
-                    <span class="detail-label">Name:</span>
-                    <span class="detail-value">${selectedPatient.firstName} ${selectedPatient.lastName}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">ID:</span>
-                    <span class="detail-value">${selectedPatient.id}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Age:</span>
-                    <span class="detail-value">${selectedPatient.age} years</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Gender:</span>
-                    <span class="detail-value">${selectedPatient.gender}</span>
-                </div>
+    <h2>📋 Patient Information</h2>
+    <div class="patient-details">
+        <div>
+            <div class="detail-item">
+                <span class="detail-label">Name:</span>
+                <span class="detail-value">${selectedPatient.firstName} ${selectedPatient.lastName}</span>
             </div>
-            <div>
-                <div class="detail-item">
-                    <span class="detail-label">Phone:</span>
-                    <span class="detail-value">${selectedPatient.phone}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Address:</span>
-                    <span class="detail-value">${selectedPatient.address}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Date:</span>
-                    <span class="detail-value">${new Date().toLocaleDateString("en-US")}</span>
-                </div>
+            <div class="detail-item">
+                <span class="detail-label">ID:</span>
+                <span class="detail-value">${selectedPatient.id}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Age:</span>
+                <span class="detail-value" style="font-weight: bold; color: #1e40af;">${selectedPatient.age} years old</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Gender:</span>
+                <span class="detail-value">${selectedPatient.gender}</span>
             </div>
         </div>
+        <div>
+            <div class="detail-item">
+                <span class="detail-label">Phone:</span>
+                <span class="detail-value">${selectedPatient.phone}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Address:</span>
+                <span class="detail-value">${selectedPatient.address}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Print Date:</span>
+                <span class="detail-value">${new Date().toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}</span>
+            </div>
+            ${
+              selectedPatient.bloodType
+                ? `
+            <div class="detail-item">
+                <span class="detail-label">Blood Type:</span>
+                <span class="detail-value">${selectedPatient.bloodType}</span>
+            </div>
+            `
+                : ""
+            }
+        </div>
     </div>
+</div>
     
     <div class="medications-section">
         <div class="medications-title">Prescribed Medications</div>
@@ -1101,8 +1115,9 @@ export default function PatientsPage() {
                         <div className="mb-2">
                           <strong>ID:</strong> {selectedPatient.id}
                         </div>
-                        <div className="mb-2">
-                          <strong>Age:</strong> {selectedPatient.age} years
+                        <div className="mb-2 p-2 bg-blue-50 rounded border-l-4 border-blue-500">
+                          <strong className="text-blue-700">Age:</strong>
+                          <span className="font-bold text-blue-800 ml-1">{selectedPatient.age} years old</span>
                         </div>
                         <div className="mb-2">
                           <strong>Gender:</strong> {selectedPatient.gender}
@@ -1116,8 +1131,18 @@ export default function PatientsPage() {
                           <strong>Address:</strong> {selectedPatient.address}
                         </div>
                         <div className="mb-2">
-                          <strong>Date:</strong> {new Date().toLocaleDateString("en-US")}
+                          <strong>Print Date:</strong>{" "}
+                          {new Date().toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
                         </div>
+                        {selectedPatient.bloodType && (
+                          <div className="mb-2">
+                            <strong>Blood Type:</strong> {selectedPatient.bloodType}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
