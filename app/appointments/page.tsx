@@ -261,20 +261,20 @@ export default function AppointmentsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navigation />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-6 lg:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center space-x-2">
-                <Calendar className="h-8 w-8 text-blue-600" />
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white flex items-center space-x-2">
+                <Calendar className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 dark:text-blue-500" />
                 <span>GOSAI CLINIC - Appointments</span>
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
+              <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 mt-2">
                 {isToday ? "Today's Schedule" : "Manage hospital appointments and schedules"}
               </p>
             </div>
-            <Button asChild className="bg-blue-600 hover:bg-blue-700">
+            <Button asChild className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
               <Link href="/appointments/book">
                 <Plus className="h-4 w-4 mr-2" />
                 New Appointment
@@ -284,53 +284,54 @@ export default function AppointmentsPage() {
         </div>
 
         {/* Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 space-y-4 lg:space-y-0">
+          <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
             <div className="flex items-center space-x-2">
               <Button variant="outline" size="sm" onClick={() => navigateDate("prev")}>
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3 w-3 lg:h-4 lg:w-4" />
               </Button>
-              <div className="text-lg font-semibold min-w-32 text-center dark:text-white">
+              <div className="text-sm lg:text-lg font-semibold min-w-32 text-center dark:text-white">
                 {new Date(selectedDate).toLocaleDateString("en-US", {
                   weekday: "long",
                   year: "numeric",
                   month: "long",
                   day: "numeric",
                 })}
-                {isToday && <span className="text-blue-600 text-sm ml-2">(Today)</span>}
+                {isToday && <span className="text-blue-600 text-xs lg:text-sm ml-2">(Today)</span>}
               </div>
               <Button variant="outline" size="sm" onClick={() => navigateDate("next")}>
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3 w-3 lg:h-4 lg:w-4" />
               </Button>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Button variant={viewMode === "day" ? "default" : "outline"} size="sm" onClick={() => setViewMode("day")}>
+              <Button variant={viewMode === "day" ? "default" : "outline"} size="sm" onClick={() => setViewMode("day")} className="text-xs lg:text-sm">
                 Day
               </Button>
               <Button
                 variant={viewMode === "week" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("week")}
+                className="text-xs lg:text-sm"
               >
                 Week
               </Button>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue />
+              <SelectTrigger className="w-full sm:w-40">
+                <Filter className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
+                <SelectValue className="text-xs lg:text-sm" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-                <SelectItem value="done">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="all" className="text-xs lg:text-sm">All Status</SelectItem>
+                <SelectItem value="confirmed" className="text-xs lg:text-sm">Confirmed</SelectItem>
+                <SelectItem value="pending" className="text-xs lg:text-sm">Pending</SelectItem>
+                <SelectItem value="urgent" className="text-xs lg:text-sm">Urgent</SelectItem>
+                <SelectItem value="done" className="text-xs lg:text-sm">Completed</SelectItem>
+                <SelectItem value="cancelled" className="text-xs lg:text-sm">Cancelled</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -355,49 +356,49 @@ export default function AppointmentsPage() {
                     return (
                       <div
                         key={timeSlot}
-                        className="flex items-center space-x-4 py-2 border-b border-gray-100 dark:border-gray-700"
+                        className="flex items-center space-x-2 sm:space-x-4 py-2 border-b border-gray-100 dark:border-gray-700"
                       >
-                        <div className="w-16 text-sm font-medium text-gray-600 dark:text-gray-400">{timeSlot}</div>
+                        <div className="w-12 sm:w-16 text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">{timeSlot}</div>
                         <div className="flex-1">
                           {appointmentsAtTime.length > 0 ? (
                             <div className="space-y-2">
                               {appointmentsAtTime.map((appointment) => (
                                 <div
                                   key={appointment.id}
-                                  className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:shadow-md transition-shadow"
                                 >
-                                  <div className="flex items-center space-x-3">
-                                    <div className="flex items-center space-x-2">
+                                  <div className="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-0">
+                                    <div className="flex items-center space-x-1 sm:space-x-2">
                                       {getStatusIcon(appointment.status)}
                                       <Badge className={getStatusColor(appointment.status)}>{appointment.status}</Badge>
                                     </div>
                                     <div>
-                                      <div className="font-medium dark:text-white">{appointment.patient}</div>
-                                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                                      <div className="text-sm sm:text-base font-medium dark:text-white">{appointment.patient}</div>
+                                      <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                                         {appointment.type} • {appointment.duration} min • {appointment.department}
                                       </div>
-                                      <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-1">
+                                      <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-1">
                                         <Stethoscope className="h-3 w-3" />
                                         <span>{appointment.doctor}</span>
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="flex space-x-2">
+                                  <div className="flex space-x-1 sm:space-x-2">
                                     {appointment.status !== "done" && (
                                       <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={() => markAsDone(appointment.id)}
-                                        className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                                        className="text-xs sm:text-sm bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
                                       >
                                         <Check className="h-3 w-3 mr-1" />
                                         Done
                                       </Button>
                                     )}
-                                    <Button size="sm" variant="outline">
+                                    <Button size="sm" variant="outline" className="text-xs sm:text-sm">
                                       Edit
                                     </Button>
-                                    <Button size="sm" variant="outline">
+                                    <Button size="sm" variant="outline" className="text-xs sm:text-sm">
                                       View
                                     </Button>
                                   </div>
@@ -405,7 +406,7 @@ export default function AppointmentsPage() {
                               ))}
                             </div>
                           ) : (
-                            <div className="text-gray-400 text-sm italic">No appointments</div>
+                            <div className="text-gray-400 text-xs sm:text-sm italic">No appointments</div>
                           )}
                         </div>
                       </div>
@@ -418,39 +419,39 @@ export default function AppointmentsPage() {
 
           {/* Appointment Summary */}
           <div className="lg:col-span-1">
-            <div className="space-y-6">
+            <div className="space-y-4 lg:space-y-6">
               {/* Today's Stats */}
               <Card className="dark:bg-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-lg dark:text-white">Today's Summary</CardTitle>
+                <CardHeader className="py-3 lg:py-4">
+                  <CardTitle className="text-base lg:text-lg dark:text-white">Today's Summary</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                <CardContent className="py-2 lg:py-3">
+                  <div className="space-y-2 lg:space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Total Appointments</span>
-                      <span className="font-semibold dark:text-white">{filteredAppointments.length}</span>
+                      <span className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">Total Appointments</span>
+                      <span className="text-xs lg:text-sm font-semibold dark:text-white">{filteredAppointments.length}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Confirmed</span>
-                      <span className="font-semibold text-green-600">
+                      <span className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">Confirmed</span>
+                      <span className="text-xs lg:text-sm font-semibold text-green-600">
                         {filteredAppointments.filter((apt) => apt.status === "confirmed").length}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Completed</span>
-                      <span className="font-semibold text-blue-600">
+                      <span className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">Completed</span>
+                      <span className="text-xs lg:text-sm font-semibold text-blue-600">
                         {filteredAppointments.filter((apt) => apt.status === "done").length}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Pending</span>
-                      <span className="font-semibold text-yellow-600">
+                      <span className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">Pending</span>
+                      <span className="text-xs lg:text-sm font-semibold text-yellow-600">
                         {filteredAppointments.filter((apt) => apt.status === "pending").length}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Urgent</span>
-                      <span className="font-semibold text-red-600">
+                      <span className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">Urgent</span>
+                      <span className="text-xs lg:text-sm font-semibold text-red-600">
                         {filteredAppointments.filter((apt) => apt.status === "urgent").length}
                       </span>
                     </div>
@@ -490,27 +491,27 @@ export default function AppointmentsPage() {
 
               {/* Quick Actions */}
               <Card className="dark:bg-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-lg dark:text-white">Quick Actions</CardTitle>
+                <CardHeader className="py-3 lg:py-4">
+                  <CardTitle className="text-base lg:text-lg dark:text-white">Quick Actions</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <Button asChild className="w-full justify-start bg-transparent" variant="outline">
+                <CardContent className="py-2 lg:py-3">
+                  <div className="space-y-2 lg:space-y-3">
+                    <Button asChild className="w-full justify-start bg-transparent text-xs lg:text-sm py-1 lg:py-2" variant="outline">
                       <Link href="/appointments/book">
-                        <Plus className="h-4 w-4 mr-2" />
+                        <Plus className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
                         Book Appointment
                       </Link>
                     </Button>
-                    <Button className="w-full justify-start bg-transparent" variant="outline">
-                      <Calendar className="h-4 w-4 mr-2" />
+                    <Button className="w-full justify-start bg-transparent text-xs lg:text-sm py-1 lg:py-2" variant="outline">
+                      <Calendar className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
                       View Calendar
                     </Button>
-                    <Button className="w-full justify-start bg-transparent" variant="outline">
-                      <User className="h-4 w-4 mr-2" />
+                    <Button className="w-full justify-start bg-transparent text-xs lg:text-sm py-1 lg:py-2" variant="outline">
+                      <User className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
                       Patient Search
                     </Button>
-                    <Button className="w-full justify-start bg-transparent" variant="outline">
-                      <Stethoscope className="h-4 w-4 mr-2" />
+                    <Button className="w-full justify-start bg-transparent text-xs lg:text-sm py-1 lg:py-2" variant="outline">
+                      <Stethoscope className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
                       Doctor Schedule
                     </Button>
                   </div>
@@ -519,18 +520,20 @@ export default function AppointmentsPage() {
 
               {/* Upcoming Appointments */}
               <Card className="dark:bg-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-lg dark:text-white">Next Appointments</CardTitle>
+                <CardHeader className="py-3 lg:py-4">
+                  <CardTitle className="text-base lg:text-lg dark:text-white">Next Appointments</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
+                <CardContent className="py-2 lg:py-3">
+                  <div className="space-y-2 lg:space-y-3">
                     {filteredAppointments.slice(0, 3).map((appointment) => (
                       <div key={appointment.id} className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div className="font-medium text-sm dark:text-white">{appointment.patient}</div>
+                        <div className="font-medium text-xs lg:text-sm dark:text-white">{appointment.patient}</div>
                         <div className="text-xs text-gray-600 dark:text-gray-400">
                           {appointment.time} • {appointment.type}
                         </div>
-                        <Badge className={`${getStatusColor(appointment.status)} text-xs`}>{appointment.status}</Badge>
+                        <div className="flex items-center mt-1">
+                          <Badge className={`${getStatusColor(appointment.status)} text-xs`}>{appointment.status}</Badge>
+                        </div>
                       </div>
                     ))}
                   </div>

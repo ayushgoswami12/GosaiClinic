@@ -74,15 +74,20 @@ export default function PatientsPage() {
     }
   }, [])
 
-  const filteredPatients = patients.filter((patient) => {
-    const fullName = `${patient.firstName} ${patient.lastName}`.toLowerCase()
-    const matchesSearch =
-      fullName.includes(searchTerm.toLowerCase()) ||
-      patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.phone.includes(searchTerm)
-    const matchesGender = genderFilter === "all" || patient.gender.toLowerCase() === genderFilter.toLowerCase()
-    return matchesSearch && matchesGender
-  })
+  const filteredPatients = patients
+    .filter((patient) => {
+      const fullName = `${patient.firstName} ${patient.lastName}`.toLowerCase()
+      const matchesSearch =
+        fullName.includes(searchTerm.toLowerCase()) ||
+        patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patient.phone.includes(searchTerm)
+      const matchesGender = genderFilter === "all" || patient.gender.toLowerCase() === genderFilter.toLowerCase()
+      return matchesSearch && matchesGender
+    })
+    .sort((a, b) => {
+      // Sort by registration date, newest first
+      return new Date(b.registrationDate).getTime() - new Date(a.registrationDate).getTime()
+    })
 
   const exportToExcel = () => {
     if (patients.length === 0) {
