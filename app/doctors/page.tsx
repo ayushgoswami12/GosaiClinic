@@ -29,18 +29,100 @@ const mockStats = {
 }
 
 const mockAppointments = [
-  { id: 1, patient: "John Smith", time: "09:00 AM", type: "Consultation", status: "confirmed", doctor: "Dr. Tansukh Gosai", department: "General Physician" },
-  { id: 2, patient: "Sarah Johnson", time: "10:30 AM", type: "Follow-up", status: "confirmed", doctor: "Dr. Devang Gosai", department: "Ano Rectal Expert" },
-  { id: 3, patient: "Mike Davis", time: "11:15 AM", type: "Emergency", status: "urgent", doctor: "Dr. Dhara Gosai", department: "Dental Surgeon" },
-  { id: 4, patient: "Emily Brown", time: "02:00 PM", type: "Follow-up", status: "pending", doctor: "Dr. Tansukh Gosai", department: "General Physician" },
-  { id: 5, patient: "David Wilson", time: "03:30 PM", type: "Follow-up", status: "confirmed", doctor: "Dr. Devang Gosai", department: "Ano Rectal Expert" },
+  {
+    id: 1,
+    patient: "John Smith",
+    time: "09:00 AM",
+    type: "Consultation",
+    status: "confirmed",
+    doctor: "Dr. Tansukh Gosai",
+    department: "General Physician",
+    phone: "+91 98765 43210",
+    date: new Date().toISOString().split("T")[0],
+  },
+  {
+    id: 2,
+    patient: "Sarah Johnson",
+    time: "10:30 AM",
+    type: "Follow-up",
+    status: "confirmed",
+    doctor: "Dr. Devang Gosai",
+    department: "Ano Rectal Expert",
+    phone: "+91 87654 32109",
+    date: new Date().toISOString().split("T")[0],
+  },
+  {
+    id: 3,
+    patient: "Mike Davis",
+    time: "11:15 AM",
+    type: "Emergency",
+    status: "urgent",
+    doctor: "Dr. Dhara Gosai",
+    department: "Dental Surgeon",
+    phone: "+91 76543 21098",
+    date: new Date().toISOString().split("T")[0],
+  },
+  {
+    id: 4,
+    patient: "Emily Brown",
+    time: "02:00 PM",
+    type: "Follow-up",
+    status: "pending",
+    doctor: "Dr. Tansukh Gosai",
+    department: "General Physician",
+    phone: "+91 65432 10987",
+    date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  },
+  {
+    id: 5,
+    patient: "David Wilson",
+    time: "03:30 PM",
+    type: "Follow-up",
+    status: "confirmed",
+    doctor: "Dr. Devang Gosai",
+    department: "Ano Rectal Expert",
+    phone: "+91 54321 09876",
+    date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  },
 ]
 
 const mockPatients = [
-  { id: 1, name: "John Smith", age: 45, condition: "Hypertension", lastVisit: "2024-01-15", status: "stable" },
-  { id: 2, name: "Sarah Johnson", age: 32, condition: "Diabetes", lastVisit: "2024-01-14", status: "monitoring" },
-  { id: 3, name: "Mike Davis", age: 28, condition: "Chest Pain", lastVisit: "2024-01-16", status: "critical" },
-  { id: 4, name: "Emily Brown", age: 55, condition: "Arthritis", lastVisit: "2024-01-10", status: "stable" },
+  {
+    id: 1,
+    name: "John Smith",
+    age: 45,
+    condition: "Hypertension",
+    lastVisit: "2024-01-15",
+    status: "stable",
+    phone: "+91 98765 43210",
+  },
+  {
+    id: 2,
+    name: "Sarah Johnson",
+    age: 32,
+    condition: "Diabetes",
+    lastVisit: "2024-01-14",
+    status: "monitoring",
+    phone: "+91 87654 32109",
+  },
+  {
+    id: 3,
+    name: "Mike Davis",
+    age: 28,
+    condition: "Chest Pain",
+    lastVisit: "2024-01-16",
+    status: "critical",
+    phone: "+91 76543 21098",
+  },
+  {
+    id: 4,
+    name: "Emily Brown",
+    age: 55,
+    condition: "Arthritis",
+    lastVisit: "2024-01-10",
+    status: "stable",
+    phone: "+91 65432 10987",
+  },
 ]
 
 export default function DoctorDashboard() {
@@ -56,15 +138,15 @@ export default function DoctorDashboard() {
           const parsedAppointments = JSON.parse(storedAppointments)
           setAppointments(parsedAppointments)
         } else {
-          // Initialize empty appointments array if none exists
-          localStorage.setItem("appointments", JSON.stringify([]))
-          setAppointments([])
+          // Initialize with mock data if none exists
+          localStorage.setItem("appointments", JSON.stringify(mockAppointments))
+          setAppointments(mockAppointments)
         }
       } catch (error) {
         console.error("Error loading appointments:", error)
-        // Reset to empty array if there's an error
-        localStorage.setItem("appointments", JSON.stringify([]))
-        setAppointments([])
+        // Reset to mock data if there's an error
+        localStorage.setItem("appointments", JSON.stringify(mockAppointments))
+        setAppointments(mockAppointments)
       }
     }
 
@@ -103,16 +185,14 @@ export default function DoctorDashboard() {
 
   const updateAppointmentStatus = (appointmentId: number, newStatus: string) => {
     setAppointments((prev) => {
-      const updatedAppointments = prev.map((apt) => 
-        apt.id === appointmentId ? { ...apt, status: newStatus } : apt
-      )
-      
+      const updatedAppointments = prev.map((apt) => (apt.id === appointmentId ? { ...apt, status: newStatus } : apt))
+
       // Save to localStorage
       localStorage.setItem("appointments", JSON.stringify(updatedAppointments))
-      
+
       // Dispatch event to notify other components
       window.dispatchEvent(new CustomEvent("appointmentUpdated"))
-      
+
       return updatedAppointments
     })
   }
@@ -213,7 +293,9 @@ export default function DoctorDashboard() {
                     <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     <span>Today's Appointments</span>
                   </CardTitle>
-                  <CardDescription className="dark:text-slate-400">Your scheduled appointments for today</CardDescription>
+                  <CardDescription className="dark:text-slate-400">
+                    Your scheduled appointments for today
+                  </CardDescription>
                 </div>
                 <Button size="sm" asChild>
                   <Link href="/appointments/book">
@@ -225,38 +307,46 @@ export default function DoctorDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {appointments.map((appointment) => (
-                  <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700/50">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3">
-                        <div className="font-medium dark:text-slate-100">{appointment.patient}</div>
-                        <Badge className={getStatusColor(appointment.status)}>{appointment.status}</Badge>
+                {appointments
+                  .filter((apt) => apt.date === new Date().toISOString().split("T")[0])
+                  .map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700/50"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3">
+                          <div className="font-medium dark:text-slate-100">{appointment.patient}</div>
+                          <Badge className={getStatusColor(appointment.status)}>{appointment.status}</Badge>
+                        </div>
+                        <div className="text-sm text-gray-600 dark:text-slate-400 mt-1">
+                          {appointment.time} • {appointment.type} • {appointment.doctor}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-slate-400 mt-0.5 font-mono">
+                          📱 {appointment.phone}
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-slate-400 mt-1">
-                        {appointment.time} • {appointment.type} • {appointment.doctor}
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
-                        View
-                      </Button>
-                      {appointment.status === "confirmed" && (
-                        <Button 
-                          size="sm" 
-                          onClick={() => markAppointmentAsDone(appointment.id)}
-                          className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
-                        >
-                          <CheckCircle className="h-4 w-4" />
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline">
+                          View
                         </Button>
-                      )}
-                      {appointment.status === "done" && (
-                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                          Done
-                        </Badge>
-                      )}
+                        {appointment.status === "confirmed" && (
+                          <Button
+                            size="sm"
+                            onClick={() => markAppointmentAsDone(appointment.id)}
+                            className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {appointment.status === "done" && (
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                            Done
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </CardContent>
           </Card>
@@ -271,7 +361,7 @@ export default function DoctorDashboard() {
                     <span>Recent Patients</span>
                   </CardTitle>
                   <CardDescription>Patients you've seen recently</CardDescription>
-                </div>                                                                    
+                </div>
                 <div className="flex space-x-2">
                   <div className="relative">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
@@ -298,6 +388,7 @@ export default function DoctorDashboard() {
                       <div className="text-sm text-gray-600 mt-1">
                         {patient.condition} • Last visit: {patient.lastVisit}
                       </div>
+                      <div className="text-sm text-gray-500 mt-0.5 font-mono">📱 {patient.phone}</div>
                     </div>
                     <div className="flex space-x-2">
                       <Button size="sm" variant="outline">
@@ -319,7 +410,7 @@ export default function DoctorDashboard() {
             <CardDescription>Common tasks and shortcuts</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <Button className="h-20 flex-col space-y-2 bg-transparent" variant="outline">
                 <Plus className="h-6 w-6" />
                 <span>New Prescription</span>
@@ -335,6 +426,10 @@ export default function DoctorDashboard() {
               <Button className="h-20 flex-col space-y-2 bg-transparent" variant="outline">
                 <AlertCircle className="h-6 w-6" />
                 <span>Emergency Alert</span>
+              </Button>
+              <Button className="h-20 flex-col space-y-2 bg-transparent" variant="outline">
+                <Users className="h-6 w-6" />
+                <span>Patient Records</span>
               </Button>
             </div>
           </CardContent>

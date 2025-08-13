@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Search, Plus, User, Pill, Download, FileText } from "lucide-react"
 import * as XLSX from "xlsx"
 import { Navigation } from "@/components/navigation"
+import { MedicineAutocomplete } from "@/components/ui/medicine-autocomplete"
 
 interface Patient {
   id: string
@@ -134,6 +135,9 @@ export default function PrescriptionsPage() {
     setPrescriptions(updatedPrescriptions)
     localStorage.setItem("prescriptions", JSON.stringify(updatedPrescriptions))
 
+    // Dispatch event to update medicine suggestions
+    window.dispatchEvent(new CustomEvent("prescriptionAdded"))
+
     // Reset form
     setSelectedPatient("")
     setSelectedDoctor("")
@@ -179,7 +183,7 @@ export default function PrescriptionsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Navigation Bar */}
       <Navigation />
-      
+
       {/* Header Section */}
       <div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -192,7 +196,11 @@ export default function PrescriptionsPage() {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <Button onClick={exportToExcel} variant="outline" className="bg-transparent border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200">
+              <Button
+                onClick={exportToExcel}
+                variant="outline"
+                className="bg-transparent border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+              >
                 <Download className="mr-2 h-4 w-4 opacity-70" />
                 Export
               </Button>
@@ -204,7 +212,7 @@ export default function PrescriptionsPage() {
           </div>
         </div>
       </div>
-      
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="mb-8">
           <div className="flex items-center mb-6">
@@ -224,20 +232,28 @@ export default function PrescriptionsPage() {
           <Card className="mb-10 border-0 shadow-lg dark:shadow-gray-800/10 overflow-hidden bg-white dark:bg-gray-800 rounded-xl">
             <CardHeader className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 pb-4">
               <CardTitle className="text-xl font-medium text-gray-900 dark:text-white">New Prescription</CardTitle>
-              <CardDescription className="text-sm text-gray-500 dark:text-gray-400">Create a new prescription for a patient</CardDescription>
+              <CardDescription className="text-sm text-gray-500 dark:text-gray-400">
+                Create a new prescription for a patient
+              </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="patient" className="text-sm font-medium text-gray-700 dark:text-gray-300">Patient</Label>
+                    <Label htmlFor="patient" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Patient
+                    </Label>
                     <Select value={selectedPatient} onValueChange={setSelectedPatient} required>
                       <SelectTrigger className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-all duration-200">
                         <SelectValue placeholder="Select patient" />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                         {patients.map((patient) => (
-                          <SelectItem key={patient.id} value={patient.id} className="focus:bg-blue-50 dark:focus:bg-blue-900/20">
+                          <SelectItem
+                            key={patient.id}
+                            value={patient.id}
+                            className="focus:bg-blue-50 dark:focus:bg-blue-900/20"
+                          >
                             {patient.firstName} {patient.lastName}
                           </SelectItem>
                         ))}
@@ -245,14 +261,20 @@ export default function PrescriptionsPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="doctor" className="text-sm font-medium text-gray-700 dark:text-gray-300">Doctor</Label>
+                    <Label htmlFor="doctor" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Doctor
+                    </Label>
                     <Select value={selectedDoctor} onValueChange={setSelectedDoctor} required>
                       <SelectTrigger className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-all duration-200">
                         <SelectValue placeholder="Select doctor" />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                         {doctors.map((doctor) => (
-                          <SelectItem key={doctor} value={doctor} className="focus:bg-blue-50 dark:focus:bg-blue-900/20">
+                          <SelectItem
+                            key={doctor}
+                            value={doctor}
+                            className="focus:bg-blue-50 dark:focus:bg-blue-900/20"
+                          >
                             {doctor}
                           </SelectItem>
                         ))}
@@ -262,7 +284,9 @@ export default function PrescriptionsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="diagnosis" className="text-sm font-medium text-gray-700 dark:text-gray-300">Diagnosis</Label>
+                  <Label htmlFor="diagnosis" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Diagnosis
+                  </Label>
                   <Input
                     id="diagnosis"
                     value={diagnosis}
@@ -276,23 +300,32 @@ export default function PrescriptionsPage() {
                 <div>
                   <div className="flex justify-between items-center mb-4">
                     <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Medications</Label>
-                    <Button type="button" onClick={addMedication} variant="outline" size="sm" className="bg-transparent border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200">
+                    <Button
+                      type="button"
+                      onClick={addMedication}
+                      variant="outline"
+                      size="sm"
+                      className="bg-transparent border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+                    >
                       <Plus className="mr-2 h-4 w-4 opacity-70" />
                       Add Medication
                     </Button>
                   </div>
                   {medications.map((medication, index) => (
-                    <Card key={index} className="mb-4 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">
+                    <Card
+                      key={index}
+                      className="mb-4 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200"
+                    >
                       <CardContent className="pt-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                           <div>
-                            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Medication Name</Label>
-                            <Input
+                            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Medication Name
+                            </Label>
+                            <MedicineAutocomplete
                               value={medication.name}
-                              onChange={(e) => updateMedication(index, "name", e.target.value)}
-                              placeholder="e.g., Paracetamol"
-                              required
-                              className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-all duration-200"
+                              onChange={(value) => updateMedication(index, "name", value)}
+                              placeholder="e.g., Paracetamol 500mg"
                             />
                           </div>
                           <div>
@@ -419,15 +452,15 @@ export default function PrescriptionsPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2">
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white transition-all duration-200"
                   >
                     Create Prescription
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => setShowNewPrescription(false)}
                     className="bg-transparent border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
                   >
@@ -446,13 +479,18 @@ export default function PrescriptionsPage() {
                 <Pill className="mx-auto h-14 w-14 text-gray-300 dark:text-gray-600 mb-5" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No prescriptions found</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                  {searchTerm ? "No prescriptions match your search criteria." : "Start by creating your first prescription using the button above."}
+                  {searchTerm
+                    ? "No prescriptions match your search criteria."
+                    : "Start by creating your first prescription using the button above."}
                 </p>
               </CardContent>
             </Card>
           ) : (
             filteredPrescriptions.map((prescription) => (
-              <Card key={prescription.id} className="border-0 shadow-md hover:shadow-lg dark:shadow-gray-800/10 overflow-hidden bg-white dark:bg-gray-800 rounded-xl transition-all duration-200">
+              <Card
+                key={prescription.id}
+                className="border-0 shadow-md hover:shadow-lg dark:shadow-gray-800/10 overflow-hidden bg-white dark:bg-gray-800 rounded-xl transition-all duration-200"
+              >
                 <CardHeader className="pb-3 border-b border-gray-100 dark:border-gray-700">
                   <div className="flex justify-between items-start">
                     <div>
@@ -472,9 +510,13 @@ export default function PrescriptionsPage() {
                             ? "secondary"
                             : "destructive"
                       }
-                      className={`${prescription.status === "Active" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : 
-                                prescription.status === "Completed" ? "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300" : 
-                                "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"} text-xs font-medium px-2.5 py-0.5 rounded-full`}
+                      className={`${
+                        prescription.status === "Active"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                          : prescription.status === "Completed"
+                            ? "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+                            : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                      } text-xs font-medium px-2.5 py-0.5 rounded-full`}
                     >
                       {prescription.status}
                     </Badge>
@@ -497,10 +539,17 @@ export default function PrescriptionsPage() {
                       </h4>
                       <div className="space-y-2">
                         {prescription.medications.map((medication, index) => (
-                          <div key={index} className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-900/30 transition-all duration-200">
+                          <div
+                            key={index}
+                            className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-900/30 transition-all duration-200"
+                          >
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-medium text-gray-900 dark:text-white text-sm">{medication.name}</span>
-                              <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">{medication.dosage}</span>
+                              <span className="font-medium text-gray-900 dark:text-white text-sm">
+                                {medication.name}
+                              </span>
+                              <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
+                                {medication.dosage}
+                              </span>
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
                               {medication.frequency.join(", ")} for {medication.duration}

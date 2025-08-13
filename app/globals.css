@@ -167,30 +167,61 @@
   border-right: 1px solid oklch(0.22 0.005 240);
 }
 
-/* Print styles: show only dedicated print sections */
+/* Print styles: show only the active print section */
 @media print {
-  /* Hide everything by default */
+  /* Hide everything by default (no layout space) */
   body * {
+    display: none !important;
     visibility: hidden !important;
   }
 
-  /* Show print sections */
-  .print-section,
-  .print-section *,
-  .print-section-global,
-  .print-section-global * {
-    visibility: visible !important;
+  /* Only show the active print section */
+  .active-print { display: block !important; visibility: visible !important; }
+  .active-print * { display: unset !important; visibility: visible !important; }
+
+  /* Modern A4 centered layout */
+  @page {
+    size: A4;
+    margin: 10mm;
   }
 
-  /* Position print sections at top-left for clean output */
-  .print-section,
-  .print-section-global {
-    position: absolute !important;
-    inset: 0 !important;
-    width: 100% !important;
-    padding: 16px;
+  .active-print {
+    position: static !important;
+    max-width: 210mm;
+    margin: 0 auto !important;
+    padding: 12mm !important;
     background: white;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color: #111;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    line-height: 1.35;
   }
+
+  .active-print h1 { font-size: 28px; font-weight: 800; letter-spacing: 0.02em; }
+  .active-print h2 { font-size: 20px; font-weight: 700; }
+  .active-print h3 { font-size: 16px; font-weight: 700; }
+  .active-print p, .active-print li, .active-print td { font-size: 13px; }
+
+  /* Cards and sections */
+  .active-print .print-patient-info,
+  .active-print .print-prescription {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    page-break-inside: avoid;
+  }
+
+  .active-print .print-prescription .print-medication {
+    border: 1px dashed #e5e5e5;
+    border-radius: 6px;
+    padding: 10px;
+  }
+
+  /* Tables (if any) */
+  .active-print table { width: 100%; border-collapse: collapse; }
+  .active-print th, .active-print td { border: 1px solid #e5e5e5; padding: 6px 8px; text-align: left; }
 
   /* Explicitly hide elements marked as no-print */
   .no-print {

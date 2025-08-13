@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, UserPlus, Users, Plus, Pill, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { MedicineAutocomplete } from "@/components/ui/medicine-autocomplete"
 
 interface PatientData {
   id: string
@@ -182,6 +183,9 @@ export default function PatientRegistration() {
         const existingPrescriptions = JSON.parse(localStorage.getItem("prescriptions") || "[]")
         const updatedPrescriptions = [...existingPrescriptions, newPrescription]
         localStorage.setItem("prescriptions", JSON.stringify(updatedPrescriptions))
+
+        // Dispatch event to update medicine suggestions
+        window.dispatchEvent(new CustomEvent("prescriptionAdded"))
       }
 
       setTotalPatients(updatedPatients.length)
@@ -360,36 +364,6 @@ export default function PatientRegistration() {
               </CardContent>
             </Card>
 
-            {/* <Card>
-              <CardHeader>
-                <CardTitle>Emergency Contact</CardTitle>
-                <CardDescription>Emergency contact person details</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="emergencyContact">Emergency Contact Name *</Label>
-                    <Input
-                      id="emergencyContact"
-                      value={formData.emergencyContact}
-                      onChange={(e) => handleInputChange("emergencyContact", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="emergencyPhone">Emergency Contact Phone *</Label>
-                    <Input
-                      id="emergencyPhone"
-                      type="tel"
-                      value={formData.emergencyPhone}
-                      onChange={(e) => handleInputChange("emergencyPhone", e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card> */}
-
             <Card>
               <CardHeader>
                 <CardTitle>Medical Information</CardTitle>
@@ -505,10 +479,10 @@ export default function PatientRegistration() {
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                             <div>
                               <Label>Medication Name</Label>
-                              <Input
+                              <MedicineAutocomplete
                                 value={medication.name}
-                                onChange={(e) => updateMedication(index, "name", e.target.value)}
-                                placeholder="e.g., Paracetamol"
+                                onChange={(value) => updateMedication(index, "name", value)}
+                                placeholder="e.g., Paracetamol 500mg"
                               />
                             </div>
                             <div>

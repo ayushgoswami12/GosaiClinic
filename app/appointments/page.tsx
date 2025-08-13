@@ -33,6 +33,7 @@ const mockAppointments = [
     type: "Consultation",
     status: "confirmed",
     department: "General Physician",
+    phone: "+91 98765 43210",
   },
   {
     id: 2,
@@ -44,6 +45,7 @@ const mockAppointments = [
     type: "Follow-up",
     status: "done",
     department: "Ano Rectal Expert",
+    phone: "+91 87654 32109",
   },
   {
     id: 3,
@@ -55,6 +57,7 @@ const mockAppointments = [
     type: "Emergency",
     status: "urgent",
     department: "Dental Surgeon",
+    phone: "+91 76543 21098",
   },
   {
     id: 4,
@@ -66,6 +69,7 @@ const mockAppointments = [
     type: "Follow-up",
     status: "pending",
     department: "General Physician",
+    phone: "+91 65432 10987",
   },
   {
     id: 5,
@@ -77,6 +81,7 @@ const mockAppointments = [
     type: "Consultation",
     status: "confirmed",
     department: "Ano Rectal Expert",
+    phone: "+91 54321 09876",
   },
 ]
 
@@ -116,15 +121,15 @@ export default function AppointmentsPage() {
         const parsedAppointments = JSON.parse(storedAppointments)
         setAppointments(parsedAppointments)
       } else {
-        // Initialize empty appointments array if none exists
-        localStorage.setItem("appointments", JSON.stringify([]))
-        setAppointments([])
+        // Initialize with mock data if none exists
+        localStorage.setItem("appointments", JSON.stringify(mockAppointments))
+        setAppointments(mockAppointments)
       }
     } catch (error) {
       console.error("Error loading appointments:", error)
-      // Reset to empty array if there's an error
-      localStorage.setItem("appointments", JSON.stringify([]))
-      setAppointments([])
+      // Reset to mock data if there's an error
+      localStorage.setItem("appointments", JSON.stringify(mockAppointments))
+      setAppointments(mockAppointments)
     }
   }
 
@@ -188,16 +193,14 @@ export default function AppointmentsPage() {
 
   const updateAppointmentStatus = (appointmentId: number, newStatus: string) => {
     setAppointments((prev) => {
-      const updatedAppointments = prev.map((apt) => 
-        apt.id === appointmentId ? { ...apt, status: newStatus } : apt
-      )
-      
+      const updatedAppointments = prev.map((apt) => (apt.id === appointmentId ? { ...apt, status: newStatus } : apt))
+
       // Save to localStorage
       localStorage.setItem("appointments", JSON.stringify(updatedAppointments))
-      
+
       // Dispatch event to notify other components
       window.dispatchEvent(new CustomEvent("appointmentUpdated"))
-      
+
       return updatedAppointments
     })
   }
@@ -305,7 +308,12 @@ export default function AppointmentsPage() {
             </div>
 
             <div className="flex items-center space-x-2">
-              <Button variant={viewMode === "day" ? "default" : "outline"} size="sm" onClick={() => setViewMode("day")} className="text-xs lg:text-sm">
+              <Button
+                variant={viewMode === "day" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("day")}
+                className="text-xs lg:text-sm"
+              >
                 Day
               </Button>
               <Button
@@ -326,12 +334,24 @@ export default function AppointmentsPage() {
                 <SelectValue className="text-xs lg:text-sm" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-xs lg:text-sm">All Status</SelectItem>
-                <SelectItem value="confirmed" className="text-xs lg:text-sm">Confirmed</SelectItem>
-                <SelectItem value="pending" className="text-xs lg:text-sm">Pending</SelectItem>
-                <SelectItem value="urgent" className="text-xs lg:text-sm">Urgent</SelectItem>
-                <SelectItem value="done" className="text-xs lg:text-sm">Completed</SelectItem>
-                <SelectItem value="cancelled" className="text-xs lg:text-sm">Cancelled</SelectItem>
+                <SelectItem value="all" className="text-xs lg:text-sm">
+                  All Status
+                </SelectItem>
+                <SelectItem value="confirmed" className="text-xs lg:text-sm">
+                  Confirmed
+                </SelectItem>
+                <SelectItem value="pending" className="text-xs lg:text-sm">
+                  Pending
+                </SelectItem>
+                <SelectItem value="urgent" className="text-xs lg:text-sm">
+                  Urgent
+                </SelectItem>
+                <SelectItem value="done" className="text-xs lg:text-sm">
+                  Completed
+                </SelectItem>
+                <SelectItem value="cancelled" className="text-xs lg:text-sm">
+                  Cancelled
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -358,7 +378,9 @@ export default function AppointmentsPage() {
                         key={timeSlot}
                         className="flex items-center space-x-2 sm:space-x-4 py-2 border-b border-gray-100 dark:border-gray-700"
                       >
-                        <div className="w-12 sm:w-16 text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">{timeSlot}</div>
+                        <div className="w-12 sm:w-16 text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                          {timeSlot}
+                        </div>
                         <div className="flex-1">
                           {appointmentsAtTime.length > 0 ? (
                             <div className="space-y-2">
@@ -373,13 +395,18 @@ export default function AppointmentsPage() {
                                       <Badge className={getStatusColor(appointment.status)}>{appointment.status}</Badge>
                                     </div>
                                     <div>
-                                      <div className="text-sm sm:text-base font-medium dark:text-white">{appointment.patient}</div>
+                                      <div className="text-sm sm:text-base font-medium dark:text-white">
+                                        {appointment.patient}
+                                      </div>
                                       <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                                         {appointment.type} • {appointment.duration} min • {appointment.department}
                                       </div>
                                       <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-1">
                                         <Stethoscope className="h-3 w-3" />
                                         <span>{appointment.doctor}</span>
+                                      </div>
+                                      <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                                        📱 {appointment.phone}
                                       </div>
                                     </div>
                                   </div>
@@ -395,10 +422,10 @@ export default function AppointmentsPage() {
                                         Done
                                       </Button>
                                     )}
-                                    <Button size="sm" variant="outline" className="text-xs sm:text-sm">
+                                    <Button size="sm" variant="outline" className="text-xs sm:text-sm bg-transparent">
                                       Edit
                                     </Button>
-                                    <Button size="sm" variant="outline" className="text-xs sm:text-sm">
+                                    <Button size="sm" variant="outline" className="text-xs sm:text-sm bg-transparent">
                                       View
                                     </Button>
                                   </div>
@@ -429,7 +456,9 @@ export default function AppointmentsPage() {
                   <div className="space-y-2 lg:space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">Total Appointments</span>
-                      <span className="text-xs lg:text-sm font-semibold dark:text-white">{filteredAppointments.length}</span>
+                      <span className="text-xs lg:text-sm font-semibold dark:text-white">
+                        {filteredAppointments.length}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">Confirmed</span>
@@ -496,21 +525,34 @@ export default function AppointmentsPage() {
                 </CardHeader>
                 <CardContent className="py-2 lg:py-3">
                   <div className="space-y-2 lg:space-y-3">
-                    <Button asChild className="w-full justify-start bg-transparent text-xs lg:text-sm py-1 lg:py-2" variant="outline">
+                    <Button
+                      asChild
+                      className="w-full justify-start bg-transparent text-xs lg:text-sm py-1 lg:py-2"
+                      variant="outline"
+                    >
                       <Link href="/appointments/book">
                         <Plus className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
                         Book Appointment
                       </Link>
                     </Button>
-                    <Button className="w-full justify-start bg-transparent text-xs lg:text-sm py-1 lg:py-2" variant="outline">
+                    <Button
+                      className="w-full justify-start bg-transparent text-xs lg:text-sm py-1 lg:py-2"
+                      variant="outline"
+                    >
                       <Calendar className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
                       View Calendar
                     </Button>
-                    <Button className="w-full justify-start bg-transparent text-xs lg:text-sm py-1 lg:py-2" variant="outline">
+                    <Button
+                      className="w-full justify-start bg-transparent text-xs lg:text-sm py-1 lg:py-2"
+                      variant="outline"
+                    >
                       <User className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
                       Patient Search
                     </Button>
-                    <Button className="w-full justify-start bg-transparent text-xs lg:text-sm py-1 lg:py-2" variant="outline">
+                    <Button
+                      className="w-full justify-start bg-transparent text-xs lg:text-sm py-1 lg:py-2"
+                      variant="outline"
+                    >
                       <Stethoscope className="h-3 w-3 lg:h-4 lg:w-4 mr-2" />
                       Doctor Schedule
                     </Button>
@@ -531,8 +573,10 @@ export default function AppointmentsPage() {
                         <div className="text-xs text-gray-600 dark:text-gray-400">
                           {appointment.time} • {appointment.type}
                         </div>
-                        <div className="flex items-center mt-1">
-                          <Badge className={`${getStatusColor(appointment.status)} text-xs`}>{appointment.status}</Badge>
+                        <div className="flex items-center justify-between mt-1">
+                          <Badge className={`${getStatusColor(appointment.status)} text-xs`}>
+                            {appointment.status}
+                          </Badge>
                         </div>
                       </div>
                     ))}
