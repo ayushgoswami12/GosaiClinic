@@ -21,8 +21,8 @@ interface PatientData {
   phone: string
   email: string
   address: string
-  emergencyContact: string
-  emergencyPhone: string
+  // emergencyContact: string
+  // emergencyPhone: string
   bloodType: string
   allergies: string
   medicalHistory: string
@@ -56,8 +56,8 @@ export default function PatientRegistration() {
     phone: "",
     email: "",
     address: "",
-    emergencyContact: "",
-    emergencyPhone: "",
+    // emergencyContact: "",
+    // emergencyPhone: "",
     bloodType: "",
     allergies: "",
     medicalHistory: "",
@@ -134,8 +134,8 @@ export default function PatientRegistration() {
       "gender",
       "phone",
       "address",
-      "emergencyContact",
-      "emergencyPhone",
+      // "emergencyContact",
+      // "emergencyPhone",
     ]
     const missingFields = requiredFields.filter((field) => !formData[field as keyof typeof formData])
     if (missingFields.length > 0) {
@@ -202,8 +202,8 @@ export default function PatientRegistration() {
         phone: "",
         email: "",
         address: "",
-        emergencyContact: "",
-        emergencyPhone: "",
+        // emergencyContact: "",
+        // emergencyPhone: "",
         bloodType: "",
         allergies: "",
         medicalHistory: "",
@@ -360,7 +360,7 @@ export default function PatientRegistration() {
               </CardContent>
             </Card>
 
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Emergency Contact</CardTitle>
                 <CardDescription>Emergency contact person details</CardDescription>
@@ -388,7 +388,7 @@ export default function PatientRegistration() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             <Card>
               <CardHeader>

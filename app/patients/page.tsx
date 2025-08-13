@@ -19,8 +19,8 @@ interface Patient {
   phone: string
   email: string
   address: string
-  emergencyContact: string
-  emergencyPhone: string
+  // emergencyContact: string
+  // emergencyPhone: string
   bloodType: string
   allergies: string
   medicalHistory: string
@@ -101,8 +101,8 @@ export default function PatientsPage() {
       Phone: patient.phone,
       Email: patient.email || "Not provided",
       Address: patient.address,
-      "Emergency Contact": patient.emergencyContact,
-      "Emergency Phone": patient.emergencyPhone,
+      // "Emergency Contact": patient.emergencyContact,
+      // "Emergency Phone": patient.emergencyPhone,
       "Blood Type": patient.bloodType || "Not specified",
       Allergies: patient.allergies || "None reported",
       "Medical History": patient.medicalHistory || "None reported",
@@ -364,19 +364,7 @@ export default function PatientsPage() {
                       </div>
                     </div>
 
-                    <div>
-                      <h5 className="font-medium mb-2 text-sm lg:text-base">Emergency Contact</h5>
-                      <div className="space-y-2 text-xs lg:text-sm">
-                        <div>
-                          <span className="font-medium">Name:</span>
-                          <p className="text-gray-600 dark:text-gray-400">{selectedPatient.emergencyContact}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium">Phone:</span>
-                          <p className="text-gray-600 dark:text-gray-400">{selectedPatient.emergencyPhone}</p>
-                        </div>
-                      </div>
-                    </div>
+               
 
                     <div>
                       <h5 className="font-medium mb-2 text-sm lg:text-base">Medical Information</h5>
