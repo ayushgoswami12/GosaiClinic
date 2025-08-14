@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Navigation } from "@/components/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, Users, Download, Edit, Phone, Mail, MapPin, Calendar, Pill, X, Printer } from "lucide-react"
+import { Search, Filter, Users, Download, Edit, Phone, MapPin, Calendar, Pill, X, Printer } from "lucide-react"
 import * as XLSX from "xlsx"
 
 interface Patient {
@@ -17,7 +17,6 @@ interface Patient {
   age: string
   gender: string
   phone: string
-  email: string
   address: string
   bloodType: string
   allergies: string
@@ -171,8 +170,8 @@ export default function PatientsPage() {
       const fullName = `${patient.firstName} ${patient.lastName}`.toLowerCase()
       const matchesSearch =
         fullName.includes(searchTerm.toLowerCase()) ||
-        patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.phone.includes(searchTerm)
+        patient.phone.includes(searchTerm) ||
+        patient.age.includes(searchTerm)
       const matchesGender = genderFilter === "all" || patient.gender.toLowerCase() === genderFilter.toLowerCase()
       return matchesSearch && matchesGender
     })
@@ -194,7 +193,6 @@ export default function PatientsPage() {
       Age: patient.age,
       Gender: patient.gender,
       Phone: patient.phone,
-      Email: patient.email || "Not provided",
       Address: patient.address,
       "Blood Type": patient.bloodType || "Not specified",
       Allergies: patient.allergies || "None reported",
@@ -293,11 +291,11 @@ export default function PatientsPage() {
   const generatePrintHTML = () => {
     if (!selectedPatient) return ""
 
-    // Get all medications from all prescriptions
-    const allMedications: Array<{ medication: Medication; prescription: Prescription }> = []
+    const prescriptionGroups: Array<{ prescription: Prescription; medications: Medication[] }> = []
     selectedPatientMedications.forEach((prescription) => {
-      prescription.medications.forEach((medication) => {
-        allMedications.push({ medication, prescription })
+      prescriptionGroups.push({
+        prescription,
+        medications: prescription.medications,
       })
     })
 
@@ -319,66 +317,66 @@ export default function PatientsPage() {
             line-height: 1.4;
             color: #000;
             background: white;
-            padding: 20px;
+            padding: 15px;
         }
         
         .clinic-header {
             text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
+            margin-bottom: 15px;
+            padding: 15px;
             border: 3px solid #1e40af;
             border-radius: 10px;
             background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
         }
         
         .clinic-title {
-            font-size: 36pt;
+            font-size: 32pt;
             font-weight: bold;
             color: #1e40af;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
         
         .clinic-subtitle {
-            font-size: 16pt;
+            font-size: 14pt;
             color: #374151;
             font-style: italic;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         
         .clinic-contact {
-            font-size: 12pt;
+            font-size: 11pt;
             color: #6b7280;
             border-top: 2px solid #93c5fd;
-            padding-top: 10px;
-            margin-top: 10px;
+            padding-top: 8px;
+            margin-top: 8px;
         }
         
         .patient-info {
             background: #f8fafc;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 30px;
+            padding: 15px;
+            margin-bottom: 15px;
         }
         
         .patient-info h2 {
             color: #1e40af;
-            font-size: 18pt;
-            margin-bottom: 15px;
+            font-size: 16pt;
+            margin-bottom: 10px;
             border-bottom: 2px solid #3b82f6;
-            padding-bottom: 5px;
+            padding-bottom: 4px;
         }
         
         .patient-details {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            font-size: 14pt;
+            gap: 10px;
+            font-size: 13pt;
         }
         
         .detail-item {
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         
         .detail-label {
@@ -393,22 +391,30 @@ export default function PatientsPage() {
         }
         
         .medications-section {
-            margin-top: 30px;
+            margin-top: 15px;
         }
         
         .medications-title {
             color: #1f2937;
-            font-size: 20pt;
+            font-size: 18pt;
             font-weight: 600;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .prescription-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            background: #fafafa;
         }
         
         .medication-item {
-            margin-bottom: 25px;
-            padding: 0;
+            margin-bottom: 12px;
+            padding: 12px;
             background: white;
-            border-radius: 0;
-            position: relative;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
         }
         
         .medication-header {
@@ -419,58 +425,73 @@ export default function PatientsPage() {
         }
         
         .medication-name {
-            font-size: 16pt;
+            font-size: 15pt;
             font-weight: 600;
             color: #1f2937;
             margin: 0;
         }
         
         .medication-category {
-            font-size: 11pt;
+            font-size: 10pt;
             font-weight: 500;
-            padding: 4px 12px;
+            padding: 3px 10px;
             border-radius: 12px;
             color: white;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         
-        .medication-instructions {
+        .medication-detail {
             color: #6b7280;
-            font-size: 13pt;
-            margin-bottom: 4px;
+            font-size: 12pt;
+            margin-bottom: 3px;
             line-height: 1.3;
         }
         
-        .medication-duration {
-            color: #6b7280;
+        .doctor-notes {
+            margin-top: 12px;
+            padding: 12px;
+            background: #dbeafe;
+            border: 2px solid #3b82f6;
+            border-radius: 6px;
+        }
+        
+        .doctor-notes-title {
+            font-weight: bold;
+            color: #1e40af;
             font-size: 13pt;
-            line-height: 1.3;
+            margin-bottom: 6px;
+        }
+        
+        .doctor-notes-content {
+            color: #374151;
+            font-size: 12pt;
+            line-height: 1.4;
         }
         
         .no-medications {
             text-align: center;
-            padding: 40px;
+            padding: 30px;
             background: #f9fafb;
             border: 2px dashed #d1d5db;
             border-radius: 8px;
             color: #6b7280;
-            font-size: 14pt;
+            font-size: 13pt;
         }
         
         .page-footer {
-            margin-top: 40px;
+            margin-top: 20px;
             text-align: center;
-            font-size: 10pt;
+            font-size: 9pt;
             color: #6b7280;
             border-top: 1px solid #d1d5db;
-            padding-top: 10px;
+            padding-top: 8px;
         }
         
         @media print {
             body { 
                 margin: 0; 
-                padding: 15px; 
+                padding: 10px; 
             }
             * {
                 -webkit-print-color-adjust: exact !important;
@@ -542,33 +563,55 @@ export default function PatientsPage() {
 </div>
     
     <div class="medications-section">
-        <div class="medications-title">Prescribed Medications</div>
+        <div class="medications-title"></div>
         
         ${
-          allMedications.length === 0
+          prescriptionGroups.length === 0
             ? `
             <div class="no-medications">
-                <div style="font-weight: bold; margin-bottom: 10px; font-size: 16pt;">No Medications Prescribed</div>
+                <div style="font-weight: bold; margin-bottom: 8px; font-size: 15pt;">No Medications Prescribed</div>
                 <div>This patient currently has no medication history.</div>
             </div>
         `
             : `
-            ${allMedications
-              .map((item) => {
-                const category = getMedicineCategory(item.medication.name)
-                const frequencyText = item.medication.frequency.join(", ")
-                const instructionText = item.medication.instructions || frequencyText
-
+            ${prescriptionGroups
+              .map((group) => {
                 return `
-                <div class="medication-item">
-                    <div class="medication-header">
-                        <div class="medication-name">${item.medication.name}</div>
-                        <div class="medication-category" style="background-color: ${category.color};">
-                            ${category.category}
-                        </div>
+                <div class="prescription-group">
+                    
+                    <div style="font-weight: bold; color: #1e40af; font-size: 15pt; margin-bottom: 10px; border-bottom: 2px solid #3b82f6; padding-bottom: 6px;">
+                        Prescribed Medications by ${group.prescription.doctorName}
                     </div>
-                    <div class="medication-instructions">${instructionText}</div>
-                    <div class="medication-duration">Duration: ${item.medication.duration}</div>
+                    ${group.medications
+                      .map((medication) => {
+                        const category = getMedicineCategory(medication.name)
+                        const frequencyText = medication.frequency.join(", ")
+
+                        return `
+                        <div class="medication-item">
+                            <div class="medication-header">
+                                <div class="medication-name">${medication.name}</div>
+                                <div class="medication-category" style="background-color: ${category.color};">
+                                    ${category.category}
+                                </div>
+                            </div>
+                            <div class="medication-detail"><strong>Frequency:</strong> ${frequencyText}</div>
+                            <div class="medication-detail"><strong>Duration:</strong> ${medication.duration || ""}</div>
+                            ${medication.instructions ? `<div class="medication-detail"><strong>Instructions:</strong> ${medication.instructions}</div>` : ""}
+                        </div>
+                    `
+                      })
+                      .join("")}
+                    ${
+                      group.prescription.notes
+                        ? `
+                        <div class="doctor-notes">
+                            <div class="doctor-notes-title">Instructions:</div>
+                            <div class="doctor-notes-content">${group.prescription.notes}</div>
+                        </div>
+                    `
+                        : ""
+                    }
                 </div>
             `
               })
@@ -697,7 +740,7 @@ export default function PatientsPage() {
                                   <strong>Phone:</strong> {patient.phone}
                                 </p>
                                 <p>
-                                  <strong>Email:</strong> {patient.email || "Not provided"}
+                                  <strong>Age:</strong> {patient.age} years
                                 </p>
                                 <p>
                                   <strong>Registered:</strong> {formatDate(patient.registrationDate)}
@@ -804,12 +847,6 @@ export default function PatientsPage() {
                               <Phone className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 dark:text-gray-500" />
                               <span>{selectedPatient.phone}</span>
                             </div>
-                            {selectedPatient.email && (
-                              <div className="flex items-center space-x-2">
-                                <Mail className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 dark:text-gray-500" />
-                                <span>{selectedPatient.email}</span>
-                              </div>
-                            )}
                             <div className="flex items-start space-x-2">
                               <MapPin className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 dark:text-gray-500 mt-0.5" />
                               <span>{selectedPatient.address}</span>
@@ -905,14 +942,6 @@ export default function PatientsPage() {
                           <div>
                             <label className="text-xs font-medium">Phone</label>
                             <Input value={editForm.phone} onChange={(e) => updateEditField("phone", e.target.value)} />
-                          </div>
-                          <div>
-                            <label className="text-xs font-medium">Email</label>
-                            <Input
-                              type="email"
-                              value={editForm.email || ""}
-                              onChange={(e) => updateEditField("email", e.target.value)}
-                            />
                           </div>
                           <div className="md:col-span-2">
                             <label className="text-xs font-medium">Address</label>
@@ -1049,7 +1078,10 @@ export default function PatientsPage() {
                                     </Badge>
                                   </div>
                                   <div className="space-y-2 text-xs lg:text-sm text-gray-600 dark:text-gray-300">
-                                    <p>{medication.instructions || medication.frequency.join(", ")}</p>
+                                    {medication.instructions && <p>{medication.instructions}</p>}
+                                    <p>
+                                      <strong>Frequency:</strong> {medication.frequency.join(", ")}
+                                    </p>
                                     <p>
                                       <strong>Duration:</strong> {medication.duration}
                                     </p>
@@ -1155,29 +1187,51 @@ export default function PatientsPage() {
                         <p className="text-gray-600">No medications prescribed</p>
                       </div>
                     ) : (
-                      <div className="space-y-4">
-                        {selectedPatientMedications.map((prescription, prescIndex) =>
-                          prescription.medications.map((medication, medIndex) => {
-                            const category = getMedicineCategory(medication.name)
-                            return (
-                              <div key={`${prescIndex}-${medIndex}`} className="border-b pb-4 last:border-b-0">
-                                <div className="flex items-start justify-between mb-2">
-                                  <h3 className="font-semibold text-base">{medication.name}</h3>
-                                  <span
-                                    className="text-xs px-2 py-1 rounded text-white font-medium"
-                                    style={{ backgroundColor: category.color }}
-                                  >
-                                    {category.category}
-                                  </span>
+                      <div className="space-y-6">
+                        {selectedPatientMedications.map((prescription, prescIndex) => (
+                          <div key={prescIndex} className="border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <div className="font-bold text-blue-700 text-lg mb-4 border-b-2 border-blue-300 pb-2">
+                              Prescribed Medications by {prescription.doctorName}
+                            </div>
+                            <div className="space-y-4">
+                              {prescription.medications.map((medication, medIndex) => {
+                                const category = getMedicineCategory(medication.name)
+                                return (
+                                  <div key={`${prescIndex}-${medIndex}`} className="bg-white p-4 rounded-lg border">
+                                    <div className="flex items-start justify-between mb-2">
+                                      <h3 className="font-semibold text-base">{medication.name}</h3>
+                                      <span
+                                        className="text-xs px-2 py-1 rounded text-white font-medium"
+                                        style={{ backgroundColor: category.color }}
+                                      >
+                                        {category.category}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-1 text-sm text-gray-600">
+                                      <p>
+                                        <strong>Frequency:</strong> {medication.frequency.join(", ")}
+                                      </p>
+                                      <p>
+                                        <strong>Duration:</strong> {medication.duration}
+                                      </p>
+                                      {medication.instructions && (
+                                        <p>
+                                          <strong>Instructions:</strong> {medication.instructions}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                              {prescription.notes && (
+                                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                                  <div className="font-bold text-blue-700 mb-2">Instructions:</div>
+                                  <div className="text-gray-700">{prescription.notes}</div>
                                 </div>
-                                <p className="text-sm text-gray-600 mb-1">
-                                  {medication.instructions || medication.frequency.join(", ")}
-                                </p>
-                                <p className="text-sm text-gray-600">Duration: {medication.duration}</p>
-                              </div>
-                            )
-                          }),
-                        )}
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

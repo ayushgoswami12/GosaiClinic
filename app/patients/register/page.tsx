@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, UserPlus, Users, Plus, Pill, ChevronDown, ChevronUp } from "lucide-react"
+import { ArrowLeft, UserPlus, Users, Plus, Pill, ChevronDown, ChevronUp, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { MedicineAutocomplete } from "@/components/ui/medicine-autocomplete"
+import { useRouter } from "next/navigation"
 
 interface PatientData {
   id: string
@@ -20,7 +21,6 @@ interface PatientData {
   age: string
   gender: string
   phone: string
-  email: string
   address: string
   bloodType: string
   allergies: string
@@ -48,13 +48,16 @@ interface Prescription {
 }
 
 export default function PatientRegistration() {
+  const router = useRouter()
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false)
+  const [successMessage, setSuccessMessage] = useState("")
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     age: "",
     gender: "",
     phone: "",
-    email: "",
     address: "",
     bloodType: "",
     allergies: "",
@@ -186,32 +189,17 @@ export default function PatientRegistration() {
       setTotalPatients(updatedPatients.length)
       window.dispatchEvent(new CustomEvent("patientAdded"))
 
-      const successMessage =
+      const message =
         showPrescription && selectedDoctor
           ? `Patient ${formData.firstName} ${formData.lastName} registered successfully with prescription! Total patients: ${updatedPatients.length}`
           : `Patient ${formData.firstName} ${formData.lastName} registered successfully! Total patients: ${updatedPatients.length}`
 
-      alert(successMessage)
+      setSuccessMessage(message)
+      setShowSuccessPopup(true)
 
-      setFormData({
-        firstName: "",
-        lastName: "",
-        age: "",
-        gender: "",
-        phone: "",
-        email: "",
-        address: "",
-        bloodType: "",
-        allergies: "",
-        medicalHistory: "",
-        dateOfVisit: new Date().toISOString().split("T")[0], // Auto-fill with today's date
-      })
-
-      setSelectedDoctor("")
-      setDiagnosis("")
-      setPrescriptionNotes("")
-      setMedications([{ name: "", dosage: "", frequency: [], duration: "", instructions: "" }])
-      setShowPrescription(false)
+      setTimeout(() => {
+        router.push("/patients")
+      }, 2000)
 
       console.log("New patient registered:", newPatient)
     } catch (error) {
@@ -226,6 +214,24 @@ export default function PatientRegistration() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+      {showSuccessPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md mx-4 text-center shadow-2xl">
+            <div className="flex justify-center mb-4">
+              <CheckCircle className="h-16 w-16 text-green-500" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Registration Successful!</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">{successMessage}</p>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Redirecting to patients page...</div>
+            <div className="mt-4">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: "100%" }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto px-4">
         <div className="mb-8">
           <Button variant="ghost" asChild className="mb-4">
@@ -320,15 +326,6 @@ export default function PatientRegistration() {
                       value={formData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
                     />
                   </div>
                 </div>
@@ -461,7 +458,6 @@ export default function PatientRegistration() {
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <Label>Medications</Label>
-                      
                     </div>
                     {medications.map((medication, index) => (
                       <Card key={index} className="mb-4">
@@ -567,9 +563,7 @@ export default function PatientRegistration() {
                                 placeholder="e.g., Take after meals"
                               />
                             </div>
-                            
                           </div>
-                          
                           {medications.length > 1 && (
                             <Button
                               type="button"
@@ -580,7 +574,6 @@ export default function PatientRegistration() {
                             >
                               Remove Medication
                             </Button>
-                            
                           )}
                         </CardContent>
                       </Card>
@@ -597,13 +590,18 @@ export default function PatientRegistration() {
                       rows={3}
                     />
                   </div>
-                   <div className="flex justify-between items-center mb-4">
-                     
-                      <Button type="button" onClick={addMedication} variant="outline" size="sm" className="bg-green-500 hover:cursor-pointer hover:bg-green-400">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Medication
-                      </Button>
-                    </div>
+                  <div className="flex justify-between items-center mb-4">
+                    <Button
+                      type="button"
+                      onClick={addMedication}
+                      variant="outline"
+                      size="sm"
+                      className="bg-green-500 hover:cursor-pointer hover:bg-green-400"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Medication
+                    </Button>
+                  </div>
                 </CardContent>
               )}
             </Card>
