@@ -185,20 +185,57 @@ export default function PatientsPage() {
       return
     }
 
-    const exportData = patients.map((patient) => ({
-      "Patient ID": patient.id,
-      "First Name": patient.firstName,
-      "Last Name": patient.lastName,
-      "Full Name": `${patient.firstName} ${patient.lastName}`,
-      Age: patient.age,
-      Gender: patient.gender,
-      Phone: patient.phone,
-      Address: patient.address,
-      "Blood Type": patient.bloodType || "Not specified",
-      Allergies: patient.allergies || "None reported",
-      "Medical History": patient.medicalHistory || "None reported",
-      "Registration Date": patient.registrationDate,
-    }))
+    // Get all prescriptions from localStorage
+    const storedPrescriptions = localStorage.getItem("prescriptions")
+    const allPrescriptions: Prescription[] = storedPrescriptions ? JSON.parse(storedPrescriptions) : []
+
+    // Create export data from medications
+    const exportData: any[] = []
+
+    // Group medications by patient
+    const patientMedicationsMap = new Map()
+
+    allPrescriptions.forEach((prescription) => {
+      const patient = patients.find((p) => p.id === prescription.patientId)
+      if (!patient) return
+
+      const patientKey = patient.id
+      if (!patientMedicationsMap.has(patientKey)) {
+        patientMedicationsMap.set(patientKey, {
+          patient,
+          medications: [],
+        })
+      }
+
+      const patientData = patientMedicationsMap.get(patientKey)
+      prescription.medications.forEach((medication) => {
+        patientData.medications.push(medication.name)
+      })
+    })
+
+    // Create one row per patient with comma-separated medications
+    patientMedicationsMap.forEach((data) => {
+      const { patient, medications } = data
+      exportData.push({
+        "SR NO": "",
+        Name: `${patient.firstName} ${patient.lastName}`,
+        Age: patient.age,
+        Gender: patient.gender,
+        Place: patient.address,
+        "Ph No": patient.phone,
+        Complain: patient.medicalHistory || "None reported",
+        Reports: patient.allergies || "None",
+        Medicine: medications.join(", "),
+        Dose: "",
+        Qty: "",
+      })
+    })
+
+    // If no medications found
+    if (exportData.length === 0) {
+      alert("No medications to export!")
+      return
+    }
 
     const worksheet = XLSX.utils.json_to_sheet(exportData)
     const workbook = XLSX.utils.book_new()
@@ -275,16 +312,16 @@ export default function PatientsPage() {
 
   const printDocument = () => {
     const printWindow = window.open("", "_blank")
-    if (!printWindow) return
+    if (printWindow) {
+      printWindow.document.write(generatePrintHTML())
+      printWindow.document.close()
+      printWindow.focus()
 
-    const printContent = generatePrintHTML()
-
-    printWindow.document.write(printContent)
-    printWindow.document.close()
-
-    printWindow.onload = () => {
-      printWindow.print()
-      printWindow.close()
+      // Wait for content to load then print
+      printWindow.onload = () => {
+        printWindow.print()
+        printWindow.close()
+      }
     }
   }
 
@@ -303,7 +340,7 @@ export default function PatientsPage() {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Patient Report - ${selectedPatient.firstName} ${selectedPatient.lastName}</title>
+    <title>Patient Bill - ${selectedPatient.firstName} ${selectedPatient.lastName}</title>
     <style>
         * {
             margin: 0;
@@ -312,331 +349,465 @@ export default function PatientsPage() {
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 12pt;
-            line-height: 1.4;
-            color: #000;
+            font-family: 'Arial', sans-serif;
+            font-size: 10pt;
+            line-height: 1.3;
+            color: #333;
             background: white;
-            padding: 15px;
+            padding: 10px;
+            max-width: 210mm;
+            margin: 0 auto;
         }
         
         .clinic-header {
-            text-align: center;
-            margin-bottom: 15px;
-            padding: 15px;
-            border: 3px solid #1e40af;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-bottom: 2px solid #3b82f6;
+            margin-bottom: 10px;
+        }
+        
+        .clinic-branding {
+            display: flex;
+            flex-direction: column;
         }
         
         .clinic-title {
-            font-size: 32pt;
+            font-size: 18pt;
             font-weight: bold;
             color: #1e40af;
-            margin-bottom: 8px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            line-height: 1;
         }
         
         .clinic-subtitle {
-            font-size: 14pt;
-            color: #374151;
+            font-size: 9pt;
+            color: #6b7280;
             font-style: italic;
-            margin-bottom: 8px;
         }
         
         .clinic-contact {
-            font-size: 11pt;
+            font-size: 8pt;
             color: #6b7280;
-            border-top: 2px solid #93c5fd;
-            padding-top: 8px;
-            margin-top: 8px;
+            text-align: right;
         }
         
-        .patient-info {
+        .patient-card {
+            display: flex;
+            justify-content: space-between;
             background: #f8fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 10px;
         }
         
-        .patient-info h2 {
+        .patient-primary-info {
+            flex: 1;
+        }
+        
+        .patient-name {
+            font-size: 12pt;
+            font-weight: bold;
             color: #1e40af;
-            font-size: 16pt;
-            margin-bottom: 10px;
-            border-bottom: 2px solid #3b82f6;
-            padding-bottom: 4px;
+            margin-bottom: 2px;
+        }
+        
+        .patient-id {
+            font-size: 8pt;
+            color: #6b7280;
+            margin-bottom: 5px;
         }
         
         .patient-details {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            font-size: 13pt;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            font-size: 8pt;
         }
         
         .detail-item {
-            margin-bottom: 6px;
+            display: flex;
+            align-items: baseline;
         }
         
         .detail-label {
             font-weight: bold;
-            color: #374151;
-            display: inline-block;
-            width: 100px;
+            color: #6b7280;
+            margin-right: 4px;
         }
         
         .detail-value {
             color: #1f2937;
         }
         
+        .detail-highlight {
+            font-weight: bold;
+            color: #1e40af;
+            display: inline-block;
+            margin-left: 5px;
+        }
+        
         .medications-section {
-            margin-top: 15px;
+            margin-top: 10px;
         }
         
-        .medications-title {
+        .section-title {
+            font-size: 11pt;
+            font-weight: bold;
             color: #1f2937;
-            font-size: 18pt;
-            font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 5px;
+            padding-bottom: 3px;
+            border-bottom: 1px solid #e5e7eb;
         }
         
-        .prescription-group {
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            background: #fafafa;
-        }
-        
-        .medication-item {
-            margin-bottom: 12px;
-            padding: 12px;
-            background: white;
-            border-radius: 6px;
-            border: 1px solid #d1d5db;
-        }
-        
-        .medication-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+        .medication-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
             margin-bottom: 8px;
         }
         
-        .medication-name {
-            font-size: 15pt;
-            font-weight: 600;
+        .medication-table th {
+            background: #f1f5f9;
             color: #1f2937;
-            margin: 0;
-        }
-        
-        .medication-category {
-            font-size: 10pt;
-            font-weight: 500;
-            padding: 3px 10px;
-            border-radius: 12px;
-            color: white;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .medication-detail {
-            color: #6b7280;
-            font-size: 12pt;
-            margin-bottom: 3px;
-            line-height: 1.3;
-        }
-        
-        .doctor-notes {
-            margin-top: 12px;
-            padding: 12px;
-            background: #dbeafe;
-            border: 2px solid #3b82f6;
-            border-radius: 6px;
-        }
-        
-        .doctor-notes-title {
             font-weight: bold;
-            color: #1e40af;
-            font-size: 13pt;
-            margin-bottom: 6px;
+            text-align: left;
+            padding: 4px;
+            border: 1px solid #e2e8f0;
         }
         
-        .doctor-notes-content {
-            color: #374151;
-            font-size: 12pt;
-            line-height: 1.4;
+        .medication-table td {
+            padding: 4px;
+            border: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+        
+        .medication-table tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        
+        .medication-name {
+            font-weight: bold;
+            color: #1f2937;
+            font-size: 9pt;
+        }
+        
+        .medication-dose {
+            color: #059669;
+            font-size: 8pt;
+        }
+        
+        .medication-qty {
+            color: #dc2626;
+            font-size: 8pt;
+            text-align: center;
         }
         
         .no-medications {
             text-align: center;
             padding: 30px;
-            background: #f9fafb;
-            border: 2px dashed #d1d5db;
-            border-radius: 8px;
             color: #6b7280;
-            font-size: 13pt;
+            font-style: italic;
+            font-size: 10pt;
+            background-color: #f9fafb;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .prescription-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 8pt;
+            margin: 5px 0;
+            padding: 4px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+        }
+        
+        .doctor-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .doctor-name {
+            font-weight: bold;
+            margin-right: 5px;
+            font-size: 9pt;
+            color: #1e40af;
+        }
+        
+        .prescription-date {
+            color: #6b7280;
+            font-size: 8pt;
+        }
+        
+        .diagnosis-section {
+            font-size: 8pt;
+            padding: 4px;
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        
+        .diagnosis-title {
+            font-weight: bold;
+            color: #92400e;
+            display: inline;
+            margin-right: 5px;
+        }
+        
+        .diagnosis-content {
+            color: #78350f;
+            display: inline;
+        }
+        
+        .fee-section {
+            text-align: right;
+            font-weight: bold;
+            font-size: 10pt;
+            margin-top: 5px;
+            padding: 4px;
+            border-top: 1px solid #e2e8f0;
         }
         
         .page-footer {
-            margin-top: 20px;
+            margin-top: 10px;
             text-align: center;
-            font-size: 9pt;
+            font-size: 7pt;
+            color: #9ca3af;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 5px;
+        }
+        
+        .print-date {
+            font-size: 7pt;
             color: #6b7280;
-            border-top: 1px solid #d1d5db;
-            padding-top: 8px;
+            text-align: right;
+            margin-bottom: 5px;
         }
         
         @media print {
             body { 
                 margin: 0; 
-                padding: 10px; 
+                padding: 5px; 
             }
             * {
                 -webkit-print-color-adjust: exact !important;
                 color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
+            table { page-break-inside: avoid; }
+            tr { page-break-inside: avoid; }
         }
     </style>
 </head>
 <body>
     <div class="clinic-header">
-        <div class="clinic-title">GOSAI CLINIC</div>
-        <div class="clinic-subtitle">Complete Healthcare Solutions</div>
+        <div class="clinic-branding">
+            <div class="clinic-title">GOSAI CLINIC</div>
+            <div class="clinic-subtitle">Complete Healthcare Solutions</div>
+        </div>
         <div class="clinic-contact">
-            📍 Opp. Taluka Panchayat, Shiv Nagar, Bhanvad, Gujarat 360510<br>
-            📞 9426953220 | ✉️ info@gosaiclinic.com
+            <div>📍 Opp. Taluka Panchayat, Shiv Nagar, Bhanvad, Gujarat 360510</div>
+            <div>📞 9426953220</div>
         </div>
     </div>
     
-    <div class="patient-info">
-    <h2>📋 Patient Information</h2>
-    <div class="patient-details">
-        <div>
-            <div class="detail-item">
-                <span class="detail-label">Name:</span>
-                <span class="detail-value">${selectedPatient.firstName} ${selectedPatient.lastName}</span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">ID:</span>
-                <span class="detail-value">${selectedPatient.id}</span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Age:</span>
-                <span class="detail-value" style="font-weight: bold; color: #1e40af;">${selectedPatient.age} years old</span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Gender:</span>
-                <span class="detail-value">${selectedPatient.gender}</span>
+    <div class="print-date">
+        Generated: ${new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })} ${new Date().toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+    </div>
+    
+    <div class="patient-card">
+        <div class="patient-primary-info">
+            <div class="patient-name">${selectedPatient.firstName} ${selectedPatient.lastName}</div>
+            <div class="patient-id">ID: ${selectedPatient.id}</div>
+            
+            <div class="patient-details">
+                <div class="detail-item">
+                    <span class="detail-label">Age:</span>
+                    <span class="detail-value">${selectedPatient.age} yrs</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Gender:</span>
+                    <span class="detail-value">${selectedPatient.gender?.charAt(0).toUpperCase() + selectedPatient.gender?.slice(1) || "Not specified"}</span>
+                </div>
+                ${
+                  selectedPatient.bloodType
+                    ? `
+                <div class="detail-item">
+                    <span class="detail-label">Blood:</span>
+                    <span class="detail-value" style="color: #dc2626; font-weight: bold;">${selectedPatient.bloodType}</span>
+                </div>
+                `
+                    : ""
+                }
+                <div class="detail-item">
+                    <span class="detail-label">Phone:</span>
+                    <span class="detail-value">${selectedPatient.phone}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Address:</span>
+                    <span class="detail-value">${selectedPatient.address}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Visit:</span>
+                    <span class="detail-value">${selectedPatient.dateOfVisit || "Not specified"}</span>
+                </div>
             </div>
         </div>
-        <div>
-            <div class="detail-item">
-                <span class="detail-label">Phone:</span>
-                <span class="detail-value">${selectedPatient.phone}</span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Address:</span>
-                <span class="detail-value">${selectedPatient.address}</span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Print Date:</span>
-                <span class="detail-value">${new Date().toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}</span>
-            </div>
+    </div>
+        
+    ${
+      selectedPatient.allergies
+        ? `
+    <div class="diagnosis-section" style="background: #fee2e2; border-color: #ef4444;">
+        <span class="diagnosis-title" style="color: #dc2626;">⚠️ Allergies:</span>
+        <span class="diagnosis-content" style="color: #991b1b;">${selectedPatient.allergies}</span>
+    </div>
+    `
+        : ""
+    }
+    
+    ${
+      selectedPatient.medicalHistory
+        ? `
+    <div class="diagnosis-section" style="background: #f0f9ff; border-color: #0ea5e9;">
+        <span class="diagnosis-title" style="color: #0c4a6e;">Medical History:</span>
+        <span class="diagnosis-content" style="color: #075985;">${selectedPatient.medicalHistory}</span>
+    </div>
+    `
+        : ""
+    }
+    </div>
+    
+    <div class="medications-section">
+        <div class="section-title">Prescribed Medications</div>
+        
+        ${
+          prescriptionGroups.length > 0
+            ? prescriptionGroups
+                .map(
+                  (group, index) => `
             ${
-              selectedPatient.bloodType
+              group.prescription.diagnosis
                 ? `
-            <div class="detail-item">
-                <span class="detail-label">Blood Type:</span>
-                <span class="detail-value">${selectedPatient.bloodType}</span>
+            <div class="diagnosis-section">
+                <span class="diagnosis-title">Diagnosis:</span>
+                <span class="diagnosis-content">${group.prescription.diagnosis}</span>
             </div>
             `
                 : ""
             }
-        </div>
-    </div>
-</div>
-    
-    <div class="medications-section">
-        <div class="medications-title"></div>
-        
-        ${
-          prescriptionGroups.length === 0
-            ? `
-            <div class="no-medications">
-                <div style="font-weight: bold; margin-bottom: 8px; font-size: 15pt;">No Medications Prescribed</div>
-                <div>This patient currently has no medication history.</div>
-            </div>
-        `
-            : `
-            ${prescriptionGroups
-              .map((group) => {
-                return `
-                <div class="prescription-group">
-                    
-                    <div style="font-weight: bold; color: #1e40af; font-size: 15pt; margin-bottom: 10px; border-bottom: 2px solid #3b82f6; padding-bottom: 6px;">
-                        Prescribed Medications by ${group.prescription.doctorName}
-                    </div>
-                    ${group.medications
-                      .map((medication) => {
-                        const category = getMedicineCategory(medication.name)
-                        const frequencyText = medication.frequency.join(", ")
-
-                        return `
-                        <div class="medication-item">
-                            <div class="medication-header">
-                                <div class="medication-name">${medication.name}</div>
-                                <div class="medication-category" style="background-color: ${category.color};">
-                                    ${category.category}
-                                </div>
-                            </div>
-                            <div class="medication-detail"><strong>Frequency:</strong> ${frequencyText}</div>
-                            <div class="medication-detail"><strong>Duration:</strong> ${medication.duration || ""}</div>
-                            ${medication.instructions ? `<div class="medication-detail"><strong>Instructions:</strong> ${medication.instructions}</div>` : ""}
-                        </div>
-                    `
-                      })
-                      .join("")}
-                    ${
-                      group.prescription.notes
-                        ? `
-                        <div class="doctor-notes">
-                            <div class="doctor-notes-title">Instructions:</div>
-                            <div class="doctor-notes-content">${group.prescription.notes}</div>
-                        </div>
-                    `
-                        : ""
-                    }
+            
+            <div class="prescription-info">
+                <div class="doctor-info">
+                    <span class="doctor-name">Dr. ${group.prescription.doctorName || "Not Specified"}</span>
+                    <span class="prescription-date">Prescribed: ${group.prescription.prescriptionDate || "Date not specified"}</span>
                 </div>
+            </div>
+            
+            ${
+              group.prescription.investigation
+                ? `
+            <div class="diagnosis-section" style="background: #f0fdf4; border-color: #22c55e;">
+                <span class="diagnosis-title" style="color: #15803d;">Investigation:</span>
+                <span class="diagnosis-content" style="color: #166534;">${group.prescription.investigation}</span>
+            </div>
             `
-              })
-              .join("")}
+                : ""
+            }
+            
+            <table class="medication-table">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">No</th>
+                        <th style="width: 45%;">Medicine</th>
+                        <th style="width: 30%;">Dosage</th>
+                        <th style="width: 17%;">Qty</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${group.medications
+                      .map(
+                        (medication, medIndex) => `
+                        <tr>
+                            <td style="text-align: center;">${medIndex + 1}</td>
+                            <td>
+                                <div class="medication-name">${medication.name}</div>
+                            </td>
+                            <td>
+                                <div class="medication-dose">${medication.dose || "As directed"}</div>
+                            </td>
+                            <td>
+                                <div class="medication-qty">${medication.qty || "As needed"}</div>
+                            </td>
+                        </tr>
+                    `,
+                      )
+                      .join("")}
+                    </tbody>
+                </table>
+                
+                ${
+                  group.prescription.fee
+                    ? `
+                <div class="fee-section">
+                    <span class="diagnosis-title" style="color: #92400e;">Consultation Fee:</span>
+                    <span class="diagnosis-content" style="color: #92400e; font-weight: 600;">₹${group.prescription.fee}</span>
+                </div>
+                `
+                    : ""
+                }
+                
+                ${
+                  group.prescription.notes
+                    ? `
+                <div class="diagnosis-section" style="background: #f3f4f6; border-color: #6b7280;">
+                    <span class="diagnosis-title" style="color: #374151;">Notes:</span>
+                    <span class="diagnosis-content" style="color: #4b5563;">${group.prescription.notes}</span>
+                </div>
+                `
+                    : ""
+                }
+            </div>
+        `,
+                )
+                .join("")
+            : `
+            <div class="no-medications">
+                <div>No medications prescribed for this patient</div>
+                <div style="font-size: 9pt; margin-top: 5px; color: #9ca3af;">Please consult with the doctor for medical advice</div>
+            </div>
         `
         }
     </div>
     
     <div class="page-footer">
-        <strong>GOSAI CLINIC</strong> - Your Health, Our Priority | 
-        Confidential Medical Document - Handle with Care | 
-        For queries: 9426953220
+        <div><strong>GOSAI CLINIC</strong> - Your Trusted Healthcare Partner</div>
+        <div style="font-size: 8pt;">This is a computer-generated report. For queries, contact: 9426953220</div>
+        <div style="font-size: 8pt;">Report ID: ${selectedPatient.id}-${Date.now()}</div>
     </div>
 </body>
-</html>
-    `
+</html>`
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 dark:text-gray-100">
       <Navigation />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
         <div className="mb-6 lg:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+          <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white flex items-center space-x-2">
                 <Users className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 dark:text-blue-500" />
@@ -659,12 +830,12 @@ export default function PatientsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800">
               <CardHeader>
                 <div className="flex flex-col space-y-4">
                   <div>
-                    <CardTitle className="text-lg lg:text-xl">Patient Database</CardTitle>
-                    <CardDescription className="text-sm lg:text-base">
+                    <CardTitle className="text-lg lg:text-xl dark:text-white">Patient Database</CardTitle>
+                    <CardDescription className="text-sm lg:text-base dark:text-gray-300">
                       All registered patients in the system
                     </CardDescription>
                   </div>
@@ -802,10 +973,10 @@ export default function PatientsPage() {
           </div>
 
           <div className="lg:col-span-1">
-            <Card className="lg:sticky lg:top-8">
+            <Card className="lg:sticky lg:top-8 border-gray-200 dark:border-gray-700 dark:bg-gray-800">
               <CardHeader>
-                <CardTitle className="text-lg lg:text-xl">Patient Details</CardTitle>
-                <CardDescription className="text-sm lg:text-base">
+                <CardTitle className="text-lg lg:text-xl dark:text-white">Patient Details</CardTitle>
+                <CardDescription className="text-sm lg:text-base dark:text-gray-300">
                   {selectedPatient ? "Detailed information" : "Select a patient to view details"}
                 </CardDescription>
               </CardHeader>
@@ -995,8 +1166,8 @@ export default function PatientsPage() {
         </div>
 
         {showMedicationModal && selectedPatient && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 lg:p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[95vh] lg:max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2 lg:p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[95vh] lg:max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700 shadow-xl">
               <div className="p-4 lg:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 lg:mb-6 space-y-2 sm:space-y-0">
                   <div>
@@ -1013,7 +1184,7 @@ export default function PatientsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-800 dark:text-blue-400"
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-800/40 dark:text-blue-300 dark:border-blue-800/50"
                       onClick={printDocument}
                     >
                       <Printer className="h-4 w-4 mr-2" />
@@ -1023,7 +1194,7 @@ export default function PatientsPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => setShowMedicationModal(false)}
-                      className="no-print"
+                      className="no-print dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -1031,30 +1202,35 @@ export default function PatientsPage() {
                 </div>
 
                 {selectedPatientMedications.length === 0 ? (
-                  <div className="text-center py-12">
+                  <div className="text-center py-12 px-4 border border-gray-100 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                     <Pill className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No medications found</h3>
                     <p className="text-gray-500 dark:text-gray-400 mb-4">
                       This patient has no prescription history yet
                     </p>
-                    <Button asChild>
+                    <Button asChild className="dark:bg-blue-700 dark:hover:bg-blue-800 dark:text-white">
                       <a href="/prescriptions">Create New Prescription</a>
                     </Button>
                   </div>
                 ) : (
                   <div className="space-y-6">
                     {selectedPatientMedications.map((prescription) => (
-                      <Card key={prescription.id} className="border-l-4 border-l-green-500 dark:border-l-green-600">
+                      <Card
+                        key={prescription.id}
+                        className="border-l-4 border-l-green-500 dark:border-l-green-600 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                      >
                         <CardHeader>
                           <div className="flex items-center justify-between">
                             <div>
-                              <CardTitle className="text-lg lg:text-xl">Prescription #{prescription.id}</CardTitle>
-                              <CardDescription>
+                              <CardTitle className="text-lg lg:text-xl dark:text-white">
+                                Prescription #{prescription.id}
+                              </CardTitle>
+                              <CardDescription className="dark:text-gray-300">
                                 Prescribed by {prescription.doctorName} on{" "}
                                 {new Date(prescription.date).toLocaleDateString()}
                               </CardDescription>
                             </div>
-                            <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300">
+                            <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
                               {prescription.medications.length} medication
                               {prescription.medications.length !== 1 ? "s" : ""}
                             </Badge>
@@ -1065,13 +1241,16 @@ export default function PatientsPage() {
                             {prescription.medications.map((medication, index) => {
                               const category = getMedicineCategory(medication.name)
                               return (
-                                <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                <div
+                                  key={index}
+                                  className="p-4 bg-gray-50 dark:bg-gray-700/80 rounded-lg border border-gray-200 dark:border-gray-600"
+                                >
                                   <div className="flex items-start justify-between mb-3">
                                     <h4 className="font-semibold text-base lg:text-lg text-gray-900 dark:text-white">
                                       {medication.name}
                                     </h4>
                                     <Badge
-                                      className="text-xs text-white font-medium"
+                                      className="text-xs text-white font-medium dark:bg-opacity-80 dark:border dark:border-opacity-30"
                                       style={{ backgroundColor: category.color }}
                                     >
                                       {category.category}
@@ -1080,7 +1259,10 @@ export default function PatientsPage() {
                                   <div className="space-y-2 text-xs lg:text-sm text-gray-600 dark:text-gray-300">
                                     {medication.instructions && <p>{medication.instructions}</p>}
                                     <p>
-                                      <strong>Frequency:</strong> {medication.frequency.join(", ")}
+                                      <strong>Frequency:</strong>{" "}
+                                      {Array.isArray(medication.frequency)
+                                        ? medication.frequency.join(", ")
+                                        : medication.frequency || "Not specified"}
                                     </p>
                                     <p>
                                       <strong>Duration:</strong> {medication.duration}
@@ -1090,7 +1272,7 @@ export default function PatientsPage() {
                               )
                             })}
                             {prescription.notes && (
-                              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900/30">
                                 <span className="font-medium text-xs lg:text-sm">Doctor's Notes:</span>
                                 <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{prescription.notes}</p>
                               </div>
@@ -1108,138 +1290,41 @@ export default function PatientsPage() {
 
         {/* Print Preview Modal */}
         {showPrintPreview && selectedPatient && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">Print Preview - Patient Report</h2>
-                  <div className="flex items-center space-x-2">
-                    <Button onClick={printDocument} className="bg-blue-600 hover:bg-blue-700">
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl max-w-5xl w-full max-h-[95vh] overflow-hidden border border-gray-200 dark:border-gray-700 shadow-2xl">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Print Preview</h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Patient Report - {selectedPatient.firstName} {selectedPatient.lastName}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-6 ml-8">
+                    <Button
+                      onClick={printDocument}
+                      className="bg-blue-600 hover:bg-blue-700 px-6 py-2 text-sm dark:bg-blue-700 dark:hover:bg-blue-800 shadow-lg"
+                    >
                       <Printer className="h-4 w-4 mr-2" />
                       Print Document
                     </Button>
-                    <Button variant="outline" onClick={() => setShowPrintPreview(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowPrintPreview(false)}
+                      className="p-2.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 border-gray-300 ml-2"
+                      aria-label="Close print preview"
+                    >
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
+              </div>
 
-                <div className="border rounded-lg p-6 bg-white">
-                  {/* Preview Header */}
-                  <div className="text-center mb-6 p-4 border-2 border-blue-600 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50">
-                    <h1 className="text-2xl font-bold text-blue-700 mb-2">GOSAI CLINIC</h1>
-                    <p className="text-sm text-gray-600 italic">Complete Healthcare Solutions</p>
-                    <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-300">
-                      📍 Opp. Taluka Panchayat, Shiv Nagar, Bhanvad, Gujarat 360510 | 📞 9426953220
-                    </div>
-                  </div>
-
-                  {/* Patient Info Preview */}
-                  <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-4 mb-6">
-                    <h2 className="text-lg font-bold text-blue-700 mb-3 border-b-2 border-blue-600 pb-1">
-                      📋 Patient Information
-                    </h2>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <div className="mb-2">
-                          <strong>Name:</strong> {selectedPatient.firstName} {selectedPatient.lastName}
-                        </div>
-                        <div className="mb-2">
-                          <strong>ID:</strong> {selectedPatient.id}
-                        </div>
-                        <div className="mb-2 p-2 bg-blue-50 rounded border-l-4 border-blue-500">
-                          <strong className="text-blue-700">Age:</strong>
-                          <span className="font-bold text-blue-800 ml-1">{selectedPatient.age} years old</span>
-                        </div>
-                        <div className="mb-2">
-                          <strong>Gender:</strong> {selectedPatient.gender}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="mb-2">
-                          <strong>Phone:</strong> {selectedPatient.phone}
-                        </div>
-                        <div className="mb-2">
-                          <strong>Address:</strong> {selectedPatient.address}
-                        </div>
-                        <div className="mb-2">
-                          <strong>Print Date:</strong>{" "}
-                          {new Date().toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </div>
-                        {selectedPatient.bloodType && (
-                          <div className="mb-2">
-                            <strong>Blood Type:</strong> {selectedPatient.bloodType}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Medications Preview */}
-                  <div className="mb-6">
-                    <h2 className="text-lg font-bold text-gray-900 mb-4">Prescribed Medications</h2>
-                    {selectedPatientMedications.length === 0 ? (
-                      <div className="text-center p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
-                        <p className="text-gray-600">No medications prescribed</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
-                        {selectedPatientMedications.map((prescription, prescIndex) => (
-                          <div key={prescIndex} className="border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
-                            <div className="font-bold text-blue-700 text-lg mb-4 border-b-2 border-blue-300 pb-2">
-                              Prescribed Medications by {prescription.doctorName}
-                            </div>
-                            <div className="space-y-4">
-                              {prescription.medications.map((medication, medIndex) => {
-                                const category = getMedicineCategory(medication.name)
-                                return (
-                                  <div key={`${prescIndex}-${medIndex}`} className="bg-white p-4 rounded-lg border">
-                                    <div className="flex items-start justify-between mb-2">
-                                      <h3 className="font-semibold text-base">{medication.name}</h3>
-                                      <span
-                                        className="text-xs px-2 py-1 rounded text-white font-medium"
-                                        style={{ backgroundColor: category.color }}
-                                      >
-                                        {category.category}
-                                      </span>
-                                    </div>
-                                    <div className="space-y-1 text-sm text-gray-600">
-                                      <p>
-                                        <strong>Frequency:</strong> {medication.frequency.join(", ")}
-                                      </p>
-                                      <p>
-                                        <strong>Duration:</strong> {medication.duration}
-                                      </p>
-                                      {medication.instructions && (
-                                        <p>
-                                          <strong>Instructions:</strong> {medication.instructions}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                              {prescription.notes && (
-                                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                                  <div className="font-bold text-blue-700 mb-2">Instructions:</div>
-                                  <div className="text-gray-700">{prescription.notes}</div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="text-center text-xs text-gray-500 border-t pt-3">
-                    <strong>GOSAI CLINIC</strong> - Your Health, Our Priority | Confidential Medical Document
-                  </div>
-                </div>
+              <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
+                <div
+                  className="active-print p-8 bg-white text-black"
+                  dangerouslySetInnerHTML={{ __html: generatePrintHTML() }}
+                />
               </div>
             </div>
           </div>

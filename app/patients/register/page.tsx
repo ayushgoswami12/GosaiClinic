@@ -8,9 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, UserPlus, Users, Plus, Pill, ChevronDown, ChevronUp, CheckCircle } from "lucide-react"
+import { ArrowLeft, UserPlus, Users, Pill, ChevronDown, ChevronUp, CheckCircle, Trash2 } from "lucide-react"
 import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
 import { MedicineAutocomplete } from "@/components/ui/medicine-autocomplete"
 import { useRouter } from "next/navigation"
 
@@ -29,19 +28,22 @@ interface PatientData {
   registrationDate: string
 }
 
+interface MedicationEntry {
+  id: string
+  name: string
+  dose: string
+  qty: string
+}
+
 interface Prescription {
   id: string
   patientId: string
   patientName: string
   doctorName: string
-  medications: {
-    name: string
-    dosage: string
-    frequency: string[] // Changed from string to string array
-    duration: string
-    instructions: string
-  }[]
+  medications: MedicationEntry[]
   diagnosis: string
+  investigation: string
+  fee: string
   notes: string
   prescriptionDate: string
   status: "Active" | "Completed" | "Cancelled"
@@ -62,32 +64,39 @@ export default function PatientRegistration() {
     bloodType: "",
     allergies: "",
     medicalHistory: "",
-    dateOfVisit: new Date().toISOString().split("T")[0], // Auto-fill with today's date
+    dateOfVisit: new Date().toISOString().split("T")[0],
   })
 
   const [totalPatients, setTotalPatients] = useState(0)
   const [showPrescription, setShowPrescription] = useState(false)
   const [selectedDoctor, setSelectedDoctor] = useState("")
   const [diagnosis, setDiagnosis] = useState("")
+  const [investigation, setInvestigation] = useState("")
+  const [fee, setFee] = useState("")
   const [prescriptionNotes, setPrescriptionNotes] = useState("")
-  const [medications, setMedications] = useState([
-    {
-      name: "",
-      dosage: "",
-      frequency: [], // Changed from empty string to empty array
-      duration: "",
-      instructions: "",
-    },
-  ])
+
+  const [medicationTable, setMedicationTable] = useState<MedicationEntry[]>([])
+  const [currentMedication, setCurrentMedication] = useState({
+    name: "",
+    dose: "",
+    qty: "",
+  })
 
   const doctors = ["Dr. Tansukh Gosai", "Dr. Devang Gosai", "Dr. Dhara Gosai"]
+
   const frequencyOptions = [
-    "સવારે જમ્યા પહેલા",
+    "સાવરે જામ્યા પહેલા",
     "સવારે જમ્યા પછી",
-    "બપોરે જમ્યા પહેલા",
-    "બપોરે જમ્યા પછી",
-    "રાત્રે જમ્યા પહેલા",
-    "રાત્રે જમ્યા પછી",
+    "સાવરે બાપોરે જામ્યા પહેલા",
+    "સાવરે બાપોરે જામ્યા પછી",
+    "સાવરે સાંજે જામ્યા પહેલા",
+    "સાવરે સાંજે જામ્યા પછી",
+    "બોપોર જમ્યા પહેલા",
+    "બોપોર જમ્યા પછી",
+    "સાંજે જમ્યા પહેલા",
+    "સાંજે જમ્યા પછી",
+    "સાવરે બોપોર સાંજે જમ્યા પહેલા",
+    "સાવરે બોપોર સાંજે જમ્યા પછી",
   ]
 
   useEffect(() => {
@@ -95,35 +104,25 @@ export default function PatientRegistration() {
     setTotalPatients(patients.length)
   }, [])
 
-  const addMedication = () => {
-    setMedications([
-      ...medications,
-      {
-        name: "",
-        dosage: "",
-        frequency: [], // Changed from empty string to empty array
-        duration: "",
-        instructions: "",
-      },
-    ])
+  const addMedicationToTable = () => {
+    if (!currentMedication.name.trim()) {
+      alert("Please enter a medicine name")
+      return
+    }
+
+    const newMedication: MedicationEntry = {
+      id: Date.now().toString(),
+      name: currentMedication.name,
+      dose: currentMedication.dose,
+      qty: currentMedication.qty,
+    }
+
+    setMedicationTable([...medicationTable, newMedication])
+    setCurrentMedication({ name: "", dose: "", qty: "" })
   }
 
-  const updateMedication = (index: number, field: string, value: string | string[]) => {
-    const updatedMedications = medications.map((med, i) => (i === index ? { ...med, [field]: value } : med))
-    setMedications(updatedMedications)
-  }
-
-  const removeMedication = (index: number) => {
-    setMedications(medications.filter((_, i) => i !== index))
-  }
-
-  const toggleFrequency = (medicationIndex: number, frequency: string) => {
-    const currentFrequencies = medications[medicationIndex].frequency
-    const updatedFrequencies = currentFrequencies.includes(frequency)
-      ? currentFrequencies.filter((f) => f !== frequency)
-      : [...currentFrequencies, frequency]
-
-    updateMedication(medicationIndex, "frequency", updatedFrequencies)
+  const removeMedicationFromTable = (id: string) => {
+    setMedicationTable(medicationTable.filter((med) => med.id !== id))
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -135,7 +134,6 @@ export default function PatientRegistration() {
       return
     }
 
-    // Validate age is a positive number
     const ageNum = Number.parseInt(formData.age)
     if (isNaN(ageNum) || ageNum < 0 || ageNum > 150) {
       alert("Please enter a valid age between 0 and 150.")
@@ -145,11 +143,6 @@ export default function PatientRegistration() {
     if (showPrescription) {
       if (!selectedDoctor || !diagnosis) {
         alert("Please fill in doctor and diagnosis for the prescription.")
-        return
-      }
-      const validMedications = medications.filter((med) => med.name.trim() !== "")
-      if (validMedications.length === 0) {
-        alert("Please add at least one medication for the prescription.")
         return
       }
     }
@@ -171,8 +164,10 @@ export default function PatientRegistration() {
           patientId: newPatient.id,
           patientName: `${formData.firstName} ${formData.lastName}`,
           doctorName: selectedDoctor,
-          medications: medications.filter((med) => med.name.trim() !== ""),
+          medications: medicationTable,
           diagnosis,
+          investigation,
+          fee,
           notes: prescriptionNotes,
           prescriptionDate: new Date().toISOString().split("T")[0],
           status: "Active",
@@ -182,7 +177,6 @@ export default function PatientRegistration() {
         const updatedPrescriptions = [...existingPrescriptions, newPrescription]
         localStorage.setItem("prescriptions", JSON.stringify(updatedPrescriptions))
 
-        // Dispatch event to update medicine suggestions
         window.dispatchEvent(new CustomEvent("prescriptionAdded"))
       }
 
@@ -430,7 +424,7 @@ export default function PatientRegistration() {
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="doctor">Doctor</Label>
+                      <Label htmlFor="doctor">Checked by</Label>
                       <Select value={selectedDoctor} onValueChange={setSelectedDoctor}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select doctor" />
@@ -444,140 +438,160 @@ export default function PatientRegistration() {
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="diagnosis">Diagnosis</Label>
-                      <Input
+                      <Textarea
                         id="diagnosis"
                         value={diagnosis}
                         onChange={(e) => setDiagnosis(e.target.value)}
                         placeholder="Enter diagnosis"
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="investigation">Investigation</Label>
+                      <Textarea
+                        id="investigation"
+                        value={investigation}
+                        onChange={(e) => setInvestigation(e.target.value)}
+                        placeholder="Enter investigation details"
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="fee">Fee</Label>
+                      <Input
+                        id="fee"
+                        value={fee}
+                        onChange={(e) => setFee(e.target.value)}
+                        placeholder="Enter fee amount"
+                        type="number"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <Label>Medications</Label>
-                    </div>
-                    {medications.map((medication, index) => (
-                      <Card key={index} className="mb-4">
-                        <CardContent className="pt-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                            <div>
-                              <Label>Medication Name</Label>
-                              <MedicineAutocomplete
-                                value={medication.name}
-                                onChange={(value) => updateMedication(index, "name", value)}
-                                placeholder="e.g., Paracetamol 500mg"
-                              />
-                            </div>
-                            <div>
-                              <Label>Dosage</Label>
-                              <Input
-                                value={medication.dosage}
-                                onChange={(e) => updateMedication(index, "dosage", e.target.value)}
-                                placeholder="e.g., 500mg"
-                              />
-                            </div>
-                            <div className="md:col-span-3">
-                              <Label>Frequency (Select Multiple)</Label>
-                              <div className="mt-2">
-                                <div className="grid grid-cols-3 gap-3 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
-                                  {frequencyOptions.map((option) => (
-                                    <div
-                                      key={option}
-                                      onClick={() => toggleFrequency(index, option)}
-                                      className={`
-                                        flex items-center justify-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 text-sm font-medium min-h-[60px]
-                                        ${
-                                          medication.frequency.includes(option)
-                                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 shadow-md transform scale-105"
-                                            : "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-blue-300 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 hover:shadow-sm"
-                                        }
-                                      `}
-                                    >
-                                      <div className="flex flex-col items-center space-y-2">
-                                        <div
-                                          className={`
-                                            w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200
-                                            ${
-                                              medication.frequency.includes(option)
-                                                ? "border-blue-500 bg-blue-500 shadow-sm"
-                                                : "border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-700"
-                                            }
-                                          `}
-                                        >
-                                          {medication.frequency.includes(option) && (
-                                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                              <path
-                                                fillRule="evenodd"
-                                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                clipRule="evenodd"
-                                              />
-                                            </svg>
-                                          )}
-                                        </div>
-                                        <span className="text-center leading-tight text-xs">{option}</span>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
+                  <div className="space-y-4">
+                    <Label className="text-lg font-semibold">Enter List of Medicine:</Label>
 
-                                {medication.frequency.length > 0 && (
-                                  <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border border-blue-200 dark:border-blue-800 rounded-lg">
-                                    <div className="flex items-center space-x-2 mb-3">
-                                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                      <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                                        Selected Frequencies ({medication.frequency.length}):
-                                      </span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                      {medication.frequency.map((freq) => (
-                                        <Badge
-                                          key={freq}
-                                          className="bg-white dark:bg-gray-800 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-600 px-3 py-1.5 shadow-sm"
-                                        >
-                                          {freq}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  </div>
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-base font-medium mb-3 block">Dose</Label>
+                        <div className="grid grid-cols-6 gap-3">
+                          {frequencyOptions.map((option) => (
+                            <div
+                              key={option}
+                              className={`flex flex-col items-center space-y-2 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105 ${
+                                currentMedication.dose === option
+                                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm"
+                                  : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
+                              }`}
+                              onClick={() => setCurrentMedication((prev) => ({ ...prev, dose: option }))}
+                            >
+                              <div
+                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                  currentMedication.dose === option
+                                    ? "border-blue-500 bg-blue-500"
+                                    : "border-gray-400 bg-white dark:bg-gray-700"
+                                }`}
+                              >
+                                {currentMedication.dose === option && (
+                                  <div className="w-2 h-2 rounded-full bg-white"></div>
                                 )}
                               </div>
+                              <span className="text-xs text-center text-gray-700 dark:text-gray-300 leading-tight font-medium">
+                                {option}
+                              </span>
                             </div>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <Label>Duration</Label>
-                              <Input
-                                value={medication.duration}
-                                onChange={(e) => updateMedication(index, "duration", e.target.value)}
-                                placeholder="e.g., 7 days"
-                              />
-                            </div>
-                            <div>
-                              <Label>Instructions</Label>
-                              <Input
-                                value={medication.instructions}
-                                onChange={(e) => updateMedication(index, "instructions", e.target.value)}
-                                placeholder="e.g., Take after meals"
-                              />
-                            </div>
-                          </div>
-                          {medications.length > 1 && (
-                            <Button
-                              type="button"
-                              onClick={() => removeMedication(index)}
-                              variant="destructive"
-                              size="sm"
-                              className="mt-4 hover:cursor-pointer hover:bg-red-500 "
-                            >
-                              Remove Medication
-                            </Button>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4 items-end">
+                        <div>
+                          <Label htmlFor="medicineName">Medicine</Label>
+                          <MedicineAutocomplete
+                            value={currentMedication.name}
+                            onChange={(value) => setCurrentMedication((prev) => ({ ...prev, name: value }))}
+                            placeholder="Enter medicine name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="qty">Qty</Label>
+                          <Input
+                            id="qty"
+                            value={currentMedication.qty}
+                            onChange={(e) => setCurrentMedication((prev) => ({ ...prev, qty: e.target.value }))}
+                            placeholder="e.g., 10"
+                          />
+                        </div>
+                        <div>
+                          <Button
+                            type="button"
+                            onClick={addMedicationToTable}
+                            className="bg-green-600 hover:bg-green-700 w-full"
+                          >
+                            Add
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {medicationTable.length > 0 && (
+                      <div className="mt-6">
+                        <div className="border rounded-lg overflow-hidden">
+                          <table className="w-full">
+                            <thead className="bg-gray-50 dark:bg-gray-800">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
+                                  Sno
+                                </th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
+                                  Medicine
+                                </th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
+                                  Dose
+                                </th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
+                                  Qty
+                                </th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
+                                  Action
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                              {medicationTable.map((medication, index) => (
+                                <tr key={medication.id}>
+                                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{index + 1}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                    {medication.name}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                    {medication.dose}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                    {medication.qty}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <Button
+                                      type="button"
+                                      onClick={() => removeMedicationFromTable(medication.id)}
+                                      variant="destructive"
+                                      size="sm"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -589,18 +603,6 @@ export default function PatientRegistration() {
                       placeholder="Any additional instructions or notes"
                       rows={3}
                     />
-                  </div>
-                  <div className="flex justify-between items-center mb-4">
-                    <Button
-                      type="button"
-                      onClick={addMedication}
-                      variant="outline"
-                      size="sm"
-                      className="bg-green-500 hover:cursor-pointer hover:bg-green-400"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Medication
-                    </Button>
                   </div>
                 </CardContent>
               )}
