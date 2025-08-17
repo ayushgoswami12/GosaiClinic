@@ -479,11 +479,11 @@ export default function PatientRegistration() {
                     <div className="space-y-4">
                       <div>
                         <Label className="text-base font-medium mb-3 block">Dose</Label>
-                        <div className="grid grid-cols-6 gap-3">
+                        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
                           {frequencyOptions.map((option) => (
                             <div
                               key={option}
-                              className={`flex flex-col items-center space-y-2 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105 ${
+                              className={`flex flex-col items-center space-y-2 p-2 sm:p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105 ${
                                 currentMedication.dose === option
                                   ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm"
                                   : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
@@ -491,17 +491,17 @@ export default function PatientRegistration() {
                               onClick={() => setCurrentMedication((prev) => ({ ...prev, dose: option }))}
                             >
                               <div
-                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                                   currentMedication.dose === option
                                     ? "border-blue-500 bg-blue-500"
                                     : "border-gray-400 bg-white dark:bg-gray-700"
                                 }`}
                               >
                                 {currentMedication.dose === option && (
-                                  <div className="w-2 h-2 rounded-full bg-white"></div>
+                                  <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-white"></div>
                                 )}
                               </div>
-                              <span className="text-xs text-center text-gray-700 dark:text-gray-300 leading-tight font-medium">
+                              <span className="text-xs sm:text-sm text-center text-gray-700 dark:text-gray-300 leading-tight font-medium">
                                 {option}
                               </span>
                             </div>

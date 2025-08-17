@@ -106,27 +106,27 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-4 sm:mb-6 lg:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-2">
-                <Settings className="h-8 w-8 text-blue-600" />
+              <h1 className="text-2xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center space-x-2">
+                <Settings className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-600" />
                 <span>Hospital Administration</span>
               </h1>
-              <p className="text-gray-600 mt-2">Comprehensive hospital management and oversight</p>
+              <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Comprehensive hospital management and oversight</p>
             </div>
             <div className="flex space-x-2">
-              <Button variant="outline" asChild>
+              <Button variant="outline" size="sm" className="h-9 text-xs sm:text-sm" asChild>
                 <Link href="/admin/reports">
-                  <BarChart3 className="h-4 w-4 mr-2" />
+                  <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Reports
                 </Link>
               </Button>
-              <Button asChild>
+              <Button size="sm" className="h-9 text-xs sm:text-sm" asChild>
                 <Link href="/admin/settings">
-                  <Settings className="h-4 w-4 mr-2" />
+                  <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Settings
                 </Link>
               </Button>
@@ -135,14 +135,14 @@ export default function AdminDashboard() {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
-              <Users className="h-4 w-4 text-blue-600" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+              <CardTitle className="text-xs sm:text-sm font-medium">Total Patients</CardTitle>
+              <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{hospitalStats.totalPatients.toLocaleString()}</div>
+            <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+              <div className="text-xl sm:text-2xl font-bold">{hospitalStats.totalPatients.toLocaleString()}</div>
               <p className="text-xs text-green-600 flex items-center mt-1">
                 <TrendingUp className="h-3 w-3 mr-1" />
                 +8.2% from last month
@@ -150,37 +150,37 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Hospital Staff</CardTitle>
-              <UserPlus className="h-4 w-4 text-green-600" />
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+              <CardTitle className="text-xs sm:text-sm font-medium">Hospital Staff</CardTitle>
+              <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{hospitalStats.totalStaff}</div>
+            <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+              <div className="text-xl sm:text-2xl font-bold">{hospitalStats.totalStaff}</div>
               <p className="text-xs text-gray-600 mt-1">
                 {hospitalStats.totalDoctors} doctors, {hospitalStats.totalNurses} nurses
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Occupancy Rate</CardTitle>
-              <Building2 className="h-4 w-4 text-purple-600" />
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+              <CardTitle className="text-xs sm:text-sm font-medium">Occupancy Rate</CardTitle>
+              <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{hospitalStats.occupancyRate}%</div>
-              <Progress value={hospitalStats.occupancyRate} className="mt-2" />
+            <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+              <div className="text-xl sm:text-2xl font-bold">{hospitalStats.occupancyRate}%</div>
+              <Progress value={hospitalStats.occupancyRate} className="mt-1 sm:mt-2" />
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-green-600" />
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+              <CardTitle className="text-xs sm:text-sm font-medium">Monthly Revenue</CardTitle>
+              <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${hospitalStats.monthlyRevenue.toLocaleString()}</div>
+            <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+              <div className="text-xl sm:text-2xl font-bold">${hospitalStats.monthlyRevenue.toLocaleString()}</div>
               <p className="text-xs text-green-600 flex items-center mt-1">
                 <TrendingUp className="h-3 w-3 mr-1" />
                 +12.5% from last month
@@ -189,34 +189,34 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8 mb-8">
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-4 sm:mb-6 lg:mb-8">
           {/* Department Overview */}
           <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
+            <Card className="shadow-sm">
+              <CardHeader className="px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4 lg:pt-6 pb-2 sm:pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                   <div>
-                    <CardTitle>Department Overview</CardTitle>
-                    <CardDescription>Current status of all hospital departments</CardDescription>
+                    <CardTitle className="text-base sm:text-lg">Department Overview</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Current status of all hospital departments</CardDescription>
                   </div>
-                  <Button variant="outline" asChild>
+                  <Button variant="outline" size="sm" className="text-xs sm:text-sm h-8 sm:h-9" asChild>
                     <Link href="/admin/departments">
-                      <Building2 className="h-4 w-4 mr-2" />
+                      <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                       Manage Departments
                     </Link>
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="px-3 sm:px-4 lg:px-6 pb-3 sm:pb-4 lg:pb-6">
+                <div className="space-y-3 sm:space-y-4">
                   {departmentStats.map((dept, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 lg:p-4 bg-gray-50 rounded-lg">
                       <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="font-semibold">{dept.name}</h3>
-                          <Badge className={getStatusColor(dept.status)}>{dept.status}</Badge>
+                        <div className="flex flex-wrap items-center gap-2 sm:space-x-3 mb-2">
+                          <h3 className="text-sm sm:text-base font-semibold">{dept.name}</h3>
+                          <Badge className={`text-xs ${getStatusColor(dept.status)}`}>{dept.status}</Badge>
                         </div>
-                        <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                           <div>
                             <span className="font-medium">Patients:</span> {dept.patients}
                           </div>
@@ -228,8 +228,8 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       </div>
-                      <div className="ml-4">
-                        <Progress value={dept.occupancy} className="w-20" />
+                      <div className="mt-2 sm:mt-0 sm:ml-4">
+                        <Progress value={dept.occupancy} className="w-full sm:w-20" />
                       </div>
                     </div>
                   ))}
@@ -240,34 +240,34 @@ export default function AdminDashboard() {
 
           {/* System Alerts */}
           <div>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
+            <Card className="shadow-sm">
+              <CardHeader className="px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4 lg:pt-6 pb-2 sm:pb-3">
+                <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
                   <span>System Alerts</span>
                 </CardTitle>
-                <CardDescription>Recent system notifications and alerts</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">Recent system notifications and alerts</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="px-3 sm:px-4 lg:px-6 pb-3 sm:pb-4 lg:pb-6">
+                <div className="space-y-2 sm:space-y-3">
                   {recentAlerts.map((alert) => (
                     <div
                       key={alert.id}
-                      className={`p-3 rounded-lg border ${getAlertColor(alert.type)} ${
+                      className={`p-2 sm:p-3 rounded-lg border ${getAlertColor(alert.type)} ${
                         alert.status === "active" ? "border-l-4" : ""
                       }`}
                     >
                       <div className="flex items-start space-x-2">
                         {getAlertIcon(alert.type)}
                         <div className="flex-1">
-                          <p className="text-sm font-medium">{alert.message}</p>
-                          <p className="text-xs opacity-75 mt-1">{alert.time}</p>
+                          <p className="text-xs sm:text-sm font-medium">{alert.message}</p>
+                          <p className="text-xs opacity-75 mt-0.5 sm:mt-1">{alert.time}</p>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                <Button variant="outline" className="w-full mt-4 bg-transparent">
+                <Button variant="outline" size="sm" className="w-full mt-3 sm:mt-4 bg-transparent text-xs sm:text-sm h-8 sm:h-9">
                   View All Alerts
                 </Button>
               </CardContent>
