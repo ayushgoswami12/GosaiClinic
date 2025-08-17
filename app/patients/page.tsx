@@ -340,7 +340,7 @@ export default function PatientsPage() {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Patient Bill - ${selectedPatient.firstName} ${selectedPatient.lastName}</title>
+    <title>Patient  - ${selectedPatient.firstName} ${selectedPatient.lastName}</title>
     <style>
         * {
             margin: 0;
