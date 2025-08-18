@@ -189,35 +189,24 @@ export default function PatientsPage() {
     const storedPrescriptions = localStorage.getItem("prescriptions")
     const allPrescriptions: Prescription[] = storedPrescriptions ? JSON.parse(storedPrescriptions) : []
 
-    // Create export data from medications
+    // Create export data with only required fields
     const exportData: any[] = []
 
-    // Group medications by patient
-    const patientMedicationsMap = new Map()
+    // Process all patients regardless of whether they have medications
+    patients.forEach((patient) => {
+      // Find all prescriptions for this patient
+      const patientPrescriptions = allPrescriptions.filter((p) => p.patientId === patient.id)
 
-    allPrescriptions.forEach((prescription) => {
-      const patient = patients.find((p) => p.id === prescription.patientId)
-      if (!patient) return
-
-      const patientKey = patient.id
-      if (!patientMedicationsMap.has(patientKey)) {
-        patientMedicationsMap.set(patientKey, {
-          patient,
-          medications: [],
+      // Extract all medications for this patient
+      const medications: string[] = []
+      patientPrescriptions.forEach((prescription) => {
+        prescription.medications.forEach((medication) => {
+          medications.push(medication.name)
         })
-      }
-
-      const patientData = patientMedicationsMap.get(patientKey)
-      prescription.medications.forEach((medication) => {
-        patientData.medications.push(medication.name)
       })
-    })
 
-    // Create one row per patient with comma-separated medications
-    patientMedicationsMap.forEach((data) => {
-      const { patient, medications } = data
+      // Create a row with only the required fields
       exportData.push({
-        "SR NO": "",
         Name: `${patient.firstName} ${patient.lastName}`,
         Age: patient.age,
         Gender: patient.gender,
@@ -225,17 +214,9 @@ export default function PatientsPage() {
         "Ph No": patient.phone,
         Complain: patient.medicalHistory || "None reported",
         Reports: patient.allergies || "None",
-        Medicine: medications.join(", "),
-        Dose: "",
-        Qty: "",
+        Treatment: medications.join(", ") || "None",
       })
     })
-
-    // If no medications found
-    if (exportData.length === 0) {
-      alert("No medications to export!")
-      return
-    }
 
     const worksheet = XLSX.utils.json_to_sheet(exportData)
     const workbook = XLSX.utils.book_new()
@@ -711,7 +692,11 @@ export default function PatientsPage() {
             
             <div class="prescription-info">
                 <div class="doctor-info">
-                    <span class="doctor-name">Dr. ${group.prescription.doctorName || "Not Specified"}</span>
+                    <span class="doctor-name">${
+                      group.prescription.doctorName?.startsWith("Dr.")
+                        ? group.prescription.doctorName
+                        : `Dr. ${group.prescription.doctorName || "Not Specified"}`
+                    }</span>
                     <span class="prescription-date">Prescribed: ${group.prescription.prescriptionDate || "Date not specified"}</span>
                 </div>
             </div>

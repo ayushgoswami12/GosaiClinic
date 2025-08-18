@@ -10,7 +10,6 @@ import {
   Users,
   Calendar,
   FileText,
-  AlertTriangle,
   CalendarDays,
   UserPlus,
   Bed,
@@ -118,8 +117,8 @@ export default function HomePage() {
 
   // Helper functions for appointments
   const getTodaysAppointments = () => {
-    const today = new Date().toISOString().split('T')[0]
-    return appointments.filter(apt => apt.date === today)
+    const today = new Date().toISOString().split("T")[0]
+    return appointments.filter((apt) => apt.date === today)
   }
 
   const getRecentAppointments = () => {
@@ -134,11 +133,19 @@ export default function HomePage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "done":
-        return <Badge className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs">Completed</Badge>
+        return (
+          <Badge className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs">Completed</Badge>
+        )
       case "confirmed":
-        return <Badge className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs">Confirmed</Badge>
+        return (
+          <Badge className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs">Confirmed</Badge>
+        )
       case "pending":
-        return <Badge className="bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 text-xs">Pending</Badge>
+        return (
+          <Badge className="bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 text-xs">
+            Pending
+          </Badge>
+        )
       case "urgent":
         return <Badge className="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs">Urgent</Badge>
       default:
@@ -284,10 +291,10 @@ export default function HomePage() {
         </nav>
       </div>
 
-              {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <div className="bg-white dark:bg-slate-800 border-b dark:border-slate-700 px-4 lg:px-8 py-4 lg:py-6">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="bg-white dark:bg-slate-800 border-b dark:border-slate-700 px-4 lg:px-8 py-4 lg:py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)} className="lg:hidden">
@@ -301,13 +308,15 @@ export default function HomePage() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Button
-                variant="outline"
-                className="hidden sm:flex items-center space-x-2 bg-transparent text-xs lg:text-sm h-9 px-3 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200"
-              >
-                <CalendarDays className="w-4 h-4" />
-                <span className="hidden md:inline">View Schedule</span>
-              </Button>
+              <Link href="/appointments">
+                <Button
+                  variant="outline"
+                  className="hidden sm:flex items-center space-x-2 bg-transparent text-xs lg:text-sm h-9 px-3 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200"
+                >
+                  <CalendarDays className="w-4 h-4" />
+                  <span className="hidden md:inline">View Schedule</span>
+                </Button>
+              </Link>
               <Link href="/patients/register">
                 <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 flex items-center space-x-2 text-xs lg:text-sm h-9 px-3 shadow-lg transition-all duration-200">
                   <UserPlus className="w-4 h-4" />
@@ -370,7 +379,9 @@ export default function HomePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs lg:text-sm text-gray-600 dark:text-slate-400 mb-1">Today's Appointments</p>
-                    <p className="text-xl lg:text-3xl font-bold text-gray-900 dark:text-slate-100">{getTodaysAppointments().length}</p>
+                    <p className="text-xl lg:text-3xl font-bold text-gray-900 dark:text-slate-100">
+                      {getTodaysAppointments().length}
+                    </p>
                     <div className="flex items-center mt-2">
                       <span className="text-xs text-gray-500 dark:text-slate-400">from</span>
                       <div className="flex items-center ml-1">
@@ -393,9 +404,15 @@ export default function HomePage() {
                     <p className="text-xs lg:text-sm text-gray-600 dark:text-slate-400 mb-1">Active Doctors</p>
                     <p className="text-xl lg:text-3xl font-bold text-gray-900 dark:text-slate-100">3</p>
                     <div className="flex flex-col mt-2 space-y-1">
-                      <span className="text-xs text-gray-500 dark:text-slate-400">Dr. Tansukh Gosai - General Physician</span>
-                      <span className="text-xs text-gray-500 dark:text-slate-400">Dr. Devang Gosai - Ano Rectal Expert</span>
-                      <span className="text-xs text-gray-500 dark:text-slate-400">Dr. Dhara Gosai - Dental Surgeon</span>
+                      <span className="text-xs text-gray-500 dark:text-slate-400">
+                        Dr. Tansukh Gosai - General Physician
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-slate-400">
+                        Dr. Devang Gosai - Ano Rectal Expert
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-slate-400">
+                        Dr. Dhara Gosai - Dental Surgeon
+                      </span>
                     </div>
                   </div>
                   <div className="w-8 h-8 lg:w-12 lg:h-12 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
@@ -419,22 +436,27 @@ export default function HomePage() {
               <CardContent className="space-y-4">
                 {getRecentAppointments().length > 0 ? (
                   getRecentAppointments().map((appointment, index) => (
-                    <div key={appointment.id} className="flex items-center justify-between p-3 lg:p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700/50">
+                    <div
+                      key={appointment.id}
+                      className="flex items-center justify-between p-3 lg:p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700/50"
+                    >
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 lg:w-10 lg:h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                           <Heart className="w-4 h-4 lg:w-5 lg:w-5 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
-                          <p className="text-sm lg:text-base font-medium text-gray-900 dark:text-slate-100">{appointment.patientName}</p>
-                          <p className="text-xs lg:text-sm text-gray-500 dark:text-slate-400">{appointment.appointmentType}</p>
+                          <p className="text-sm lg:text-base font-medium text-gray-900 dark:text-slate-100">
+                            {appointment.patientName}
+                          </p>
+                          <p className="text-xs lg:text-sm text-gray-500 dark:text-slate-400">
+                            {appointment.appointmentType}
+                          </p>
                           <p className="text-xs text-blue-600 dark:text-blue-400">
                             {formatTime(appointment.time)} • {appointment.doctor}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        {getStatusBadge(appointment.status)}
-                      </div>
+                      <div className="flex items-center space-x-2">{getStatusBadge(appointment.status)}</div>
                     </div>
                   ))
                 ) : (
@@ -456,25 +478,32 @@ export default function HomePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {getTodaysAppointments().length > 0 ? (
-                  getTodaysAppointments().slice(0, 3).map((appointment) => (
-                    <div key={appointment.id} className="flex items-center justify-between p-3 lg:p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700/50">
-                      <div className="flex items-center space-x-3">
-                        <div className="text-blue-600 dark:text-blue-400 font-semibold text-center">
-                          <div className="text-xs lg:text-sm">{formatTime(appointment.time)}</div>
+                  getTodaysAppointments()
+                    .slice(0, 3)
+                    .map((appointment) => (
+                      <div
+                        key={appointment.id}
+                        className="flex items-center justify-between p-3 lg:p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700/50"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="text-blue-600 dark:text-blue-400 font-semibold text-center">
+                            <div className="text-xs lg:text-sm">{formatTime(appointment.time)}</div>
+                          </div>
+                          <div>
+                            <p className="text-sm lg:text-base font-medium text-gray-900 dark:text-slate-100">
+                              {appointment.patientName}
+                            </p>
+                            <p className="text-xs lg:text-sm text-gray-500 dark:text-slate-400">{appointment.doctor}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm lg:text-base font-medium text-gray-900 dark:text-slate-100">{appointment.patientName}</p>
-                          <p className="text-xs lg:text-sm text-gray-500 dark:text-slate-400">{appointment.doctor}</p>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="outline" className="text-xs">
+                            {appointment.appointmentType}
+                          </Badge>
+                          {getStatusBadge(appointment.status)}
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline" className="text-xs">
-                          {appointment.appointmentType}
-                        </Badge>
-                        {getStatusBadge(appointment.status)}
-                      </div>
-                    </div>
-                  ))
+                    ))
                 ) : (
                   <div className="text-center py-6 text-gray-500 dark:text-slate-400">
                     <Calendar className="w-8 h-8 mx-auto mb-2 text-gray-400 dark:text-slate-500" />
