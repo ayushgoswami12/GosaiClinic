@@ -141,8 +141,8 @@ export default function PatientRegistration() {
     }
 
     if (showPrescription) {
-      if (!selectedDoctor || !diagnosis) {
-        alert("Please fill in doctor and diagnosis for the prescription.")
+      if (!selectedDoctor) {
+        alert("Please select a doctor for the prescription.")
         return
       }
     }
@@ -158,7 +158,7 @@ export default function PatientRegistration() {
       const updatedPatients = [...existingPatients, newPatient]
       localStorage.setItem("patients", JSON.stringify(updatedPatients))
 
-      if (showPrescription && selectedDoctor && diagnosis) {
+      if (showPrescription && selectedDoctor) {
         const newPrescription: Prescription = {
           id: Date.now().toString(),
           patientId: newPatient.id,
