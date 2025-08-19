@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Navigation } from "@/components/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, Users, Edit, Phone, MapPin, Calendar, Pill, X, Printer, FileSpreadsheet } from "lucide-react"
+import { Search, Filter, Users, Edit, Phone, MapPin, Calendar, Pill, X, Printer, FileSpreadsheet, Clock, AlertCircle, User, ClipboardList, FileText } from "lucide-react"
 
 interface Patient {
   id: string
@@ -1157,25 +1157,29 @@ export default function PatientsPage() {
         </div>
 
         {showMedicationModal && selectedPatient && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2 lg:p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[95vh] lg:max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700 shadow-xl">
-              <div className="p-4 lg:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 lg:mb-6 space-y-2 sm:space-y-0">
+          <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center z-50 p-2 lg:p-4 transition-all duration-300">
+            <div className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full max-h-[95vh] lg:max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700 shadow-2xl transform transition-all duration-300">
+              <div className="p-6 lg:p-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 lg:mb-8 space-y-2 sm:space-y-0">
                   <div>
                     <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-                      <Pill className="h-5 w-5 lg:h-6 lg:w-6 mr-2 text-green-600 dark:text-green-500" />
-                      Medication History
+                      <Pill className="h-6 w-6 lg:h-7 lg:w-7 mr-3 text-green-600 dark:text-green-500" />
+                      <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Medication History</span>
                     </h2>
-                    <p className="text-sm lg:text-base text-gray-600 dark:text-gray-300">
-                      {selectedPatient?.firstName} {selectedPatient?.lastName} - Age: {selectedPatient?.age} years - ID:{" "}
-                      {selectedPatient?.id}
-                    </p>
+                    <div className="mt-2 flex items-center">
+                      <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-2">
+                        <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <p className="text-sm lg:text-base text-gray-600 dark:text-gray-300 font-medium">
+                        {selectedPatient?.firstName} {selectedPatient?.lastName} <span className="text-gray-400 dark:text-gray-500">•</span> Age: {selectedPatient?.age} <span className="text-gray-400 dark:text-gray-500">•</span> ID: {selectedPatient?.id}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-3">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-800/40 dark:text-blue-300 dark:border-blue-800/50"
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-800/40 dark:text-blue-300 dark:border-blue-800/50 transition-all duration-200 shadow-sm hover:shadow"
                       onClick={printDocument}
                     >
                       <Printer className="h-4 w-4 mr-2" />
@@ -1185,7 +1189,7 @@ export default function PatientsPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => setShowMedicationModal(false)}
-                      className="no-print dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                      className="no-print dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 hover:bg-gray-100 transition-all duration-200"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -1193,71 +1197,119 @@ export default function PatientsPage() {
                 </div>
 
                 {selectedPatientMedications.length === 0 ? (
-                  <div className="text-center py-12 px-4 border border-gray-100 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <Pill className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No medications found</h3>
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">
-                      This patient has no prescription history yet
+                  <div className="text-center py-16 px-6 border border-gray-100 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50 shadow-inner">
+                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                      <Pill className="h-10 w-10 text-green-500 dark:text-green-400" />
+                    </div>
+                    <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-3">No medications found</h3>
+                    <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                      This patient has no prescription history yet. You can create a new prescription to add medications.
                     </p>
-                    <Button asChild className="dark:bg-blue-700 dark:hover:bg-blue-800 dark:text-white">
-                      <a href="/prescriptions">Create New Prescription</a>
+                    <Button asChild className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200">
+                      <a href="/prescriptions">
+                        <FilePlus className="h-4 w-4 mr-2" />
+                        Create New Prescription
+                      </a>
                     </Button>
                   </div>
                 ) : (
                   <div className="space-y-6">
+                    <div className="flex items-center justify-between mb-4 px-1">
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                        <ClipboardList className="h-4 w-4 mr-2 opacity-70" />
+                        Total Prescriptions: {selectedPatientMedications.length}
+                      </h3>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Last updated: {new Date(Math.max(...selectedPatientMedications.map(p => new Date(p.date).getTime()))).toLocaleDateString()}
+                      </div>
+                    </div>
+                    
                     {selectedPatientMedications.map((prescription) => (
                       <Card
                         key={prescription.id}
-                        className="border-l-4 border-l-green-500 dark:border-l-green-600 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        className="border-l-4 border-l-green-500 dark:border-l-green-600 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 overflow-hidden"
                       >
-                        <CardHeader>
+                        <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/10 dark:to-blue-900/10 pb-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <CardTitle className="text-lg lg:text-xl dark:text-white">
-                                Prescription #{prescription.id}
+                              <CardTitle className="text-lg lg:text-xl dark:text-white flex items-center">
+                                <FileText className="h-5 w-5 mr-2 text-green-600 dark:text-green-500" />
+                                Prescription #{prescription.id.slice(-4)}
                               </CardTitle>
-                              <CardDescription className="dark:text-gray-300">
-                                Prescribed by {prescription.doctorName} on{" "}
+                              <CardDescription className="dark:text-gray-300 mt-1 flex items-center">
+                                <User className="h-3.5 w-3.5 mr-1.5 text-gray-400 dark:text-gray-500" />
+                                Dr. {prescription.doctorName} 
+                                <span className="mx-2 text-gray-300 dark:text-gray-600">•</span>
+                                <Calendar className="h-3.5 w-3.5 mr-1.5 text-gray-400 dark:text-gray-500" />
                                 {new Date(prescription.date).toLocaleDateString()}
                               </CardDescription>
                             </div>
-                            <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                            <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 px-3 py-1 rounded-full">
                               {prescription.medications.length} medication
                               {prescription.medications.length !== 1 ? "s" : ""}
                             </Badge>
                           </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="pt-5">
                           <div className="space-y-4">
                             {prescription.medications.map((medication, index) => {
                               const category = getMedicineCategory(medication.name)
                               return (
                                 <div
                                   key={index}
-                                  className="p-4 bg-gray-50 dark:bg-gray-700/80 rounded-lg border border-gray-200 dark:border-gray-600"
+                                  className="p-5 bg-white dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-green-200 dark:hover:border-green-800/30 transition-all duration-200 shadow-sm hover:shadow"
                                 >
                                   <div className="flex items-start justify-between mb-3">
-                                    <h4 className="font-semibold text-base lg:text-lg text-gray-900 dark:text-white">
+                                    <h4 className="font-semibold text-base lg:text-lg text-gray-900 dark:text-white flex items-center">
+                                      <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: category.color }}></span>
                                       {medication.name}
                                     </h4>
                                     <Badge
-                                      className="text-xs text-white font-medium dark:bg-opacity-80 dark:border dark:border-opacity-30"
+                                      className="text-xs text-white font-medium dark:bg-opacity-80 dark:border dark:border-opacity-30 px-2.5 py-0.5 rounded-full shadow-sm"
                                       style={{ backgroundColor: category.color }}
                                     >
                                       {category.category}
                                     </Badge>
                                   </div>
-                                  <div className="space-y-2 text-xs lg:text-sm text-gray-600 dark:text-gray-300">
-                                    {medication.instructions && <p>{medication.instructions}</p>}
-                                    <p>
-                                      <strong>Frequency:</strong>{" "}
-                                      {Array.isArray(medication.frequency)
-                                        ? medication.frequency.join(", ")
-                                        : medication.frequency || "Not specified"}
-                                    </p>
-                                    <p>
-                                      <strong>Duration:</strong> {medication.duration}
-                                    </p>
+                                  <div className="grid grid-cols-1 gap-3 text-xs lg:text-sm text-gray-600 dark:text-gray-300 mt-4">
+                                    <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                                      <div className="flex items-center mb-2">
+                                        <Clock className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 mr-1.5" />
+                                        <span className="font-medium text-gray-700 dark:text-gray-300">Dosage Schedule</span>
+                                      </div>
+                                      <div className="flex flex-wrap gap-2 mb-2">
+                                        {Array.isArray(medication.frequency) && medication.frequency.map((freq, i) => (
+                                          <span key={i} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                            {freq}
+                                          </span>
+                                        ))}
+                                        {(!Array.isArray(medication.frequency) || medication.frequency.length === 0) && (
+                                          <span className="text-gray-500 dark:text-gray-400 text-xs">No frequency specified</span>
+                                        )}
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <div className="flex items-center">
+                                          <span className="w-2 h-2 rounded-full bg-purple-500 mr-1.5"></span>
+                                          <span className="text-gray-500 dark:text-gray-400">Dosage:</span>
+                                          <span className="ml-1 font-medium text-gray-700 dark:text-gray-300">{medication.dosage || "Not specified"}</span>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <span className="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>
+                                          <span className="text-gray-500 dark:text-gray-400">Duration:</span>
+                                          <span className="ml-1 font-medium text-gray-700 dark:text-gray-300">{medication.duration || "Not specified"}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {medication.instructions && (
+                                      <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-100 dark:border-yellow-900/30">
+                                        <div className="flex items-center mb-1.5">
+                                          <AlertCircle className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400 mr-1.5" />
+                                          <span className="font-medium text-amber-700 dark:text-amber-400">Special Instructions</span>
+                                        </div>
+                                        <p className="text-gray-700 dark:text-gray-300">{medication.instructions}</p>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               )
