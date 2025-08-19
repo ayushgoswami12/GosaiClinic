@@ -7,8 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Navigation } from "@/components/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, Users, Download, Edit, Phone, MapPin, Calendar, Pill, X, Printer } from "lucide-react"
-import * as XLSX from "xlsx"
+import { Search, Filter, Users, Edit, Phone, MapPin, Calendar, Pill, X, Printer, FileSpreadsheet } from "lucide-react"
 
 interface Patient {
   id: string
@@ -40,6 +39,10 @@ interface Prescription {
   medications: Medication[]
   notes: string
   date: string
+  investigation?: string
+  diagnosis?: string
+  prescriptionDate?: string
+  fee?: string
 }
 
 export default function PatientsPage() {
@@ -179,56 +182,62 @@ export default function PatientsPage() {
       return new Date(b.registrationDate).getTime() - new Date(a.registrationDate).getTime()
     })
 
+  // Excel export feature
   const exportToExcel = () => {
-    if (patients.length === 0) {
-      alert("No patients to export!")
-      return
-    }
-
-    // Get all prescriptions from localStorage
-    const storedPrescriptions = localStorage.getItem("prescriptions")
-    const allPrescriptions: Prescription[] = storedPrescriptions ? JSON.parse(storedPrescriptions) : []
-
-    // Create export data with only required fields
-    const exportData: any[] = []
-
-    // Process all patients regardless of whether they have medications
-    patients.forEach((patient) => {
-      // Find all prescriptions for this patient
-      const patientPrescriptions = allPrescriptions.filter((p) => p.patientId === patient.id)
-
-      // Extract all medications for this patient
-      const medications: string[] = []
-      patientPrescriptions.forEach((prescription) => {
-        prescription.medications.forEach((medication) => {
-          medications.push(medication.name)
+    if (patients.length === 0) return
+    
+    // Import xlsx dynamically to avoid SSR issues
+    import('xlsx').then((XLSX) => {
+      // Prepare data for export
+      const data = filteredPatients.map(patient => {
+        // Get medications for this patient
+        const patientPrescriptions = getMedicationsForPatient(patient.id)
+        
+        // Extract all medication names from prescriptions
+        const medicationNames: string[] = []
+        patientPrescriptions.forEach(prescription => {
+          prescription.medications.forEach(medication => {
+            medicationNames.push(medication.name)
+          })
         })
+        
+        // Join medication names with commas
+        const treatmentText = medicationNames.length > 0 ? medicationNames.join(', ') : 'None'
+        
+        // Get investigation reports from prescriptions if available
+        const investigationReports: string[] = []
+        
+        // Reuse the same patientPrescriptions variable we already have
+        patientPrescriptions.forEach(prescription => {
+          if (prescription.investigation && prescription.investigation.trim() !== '') {
+            investigationReports.push(prescription.investigation)
+          }
+        })
+        
+        const investigationText = investigationReports.length > 0 ? investigationReports.join(', ') : 'None'
+        
+        return {
+          Name: `${patient.firstName} ${patient.lastName}`,
+          Age: patient.age,
+          Gender: patient.gender,
+          Place: patient.address,
+          'Ph No': patient.phone,
+          'Complain': patient.medicalHistory || 'None reported',
+          'Reports': investigationText,
+          'Treatment': treatmentText
+        }
       })
 
-      // Create a row with only the required fields
-      exportData.push({
-        Name: `${patient.firstName} ${patient.lastName}`,
-        Age: patient.age,
-        Gender: patient.gender,
-        Place: patient.address,
-        "Ph No": patient.phone,
-        Complain: patient.medicalHistory || "None reported",
-        Reports: patient.allergies || "None",
-        Treatment: medications.join(", ") || "None",
-      })
+      // Create worksheet
+      const worksheet = XLSX.utils.json_to_sheet(data)
+      
+      // Create workbook
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Patients')
+      
+      // Generate Excel file and trigger download
+      XLSX.writeFile(workbook, 'Patients_List.xlsx')
     })
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "GOSAI CLINIC Patients")
-
-    const colWidths = Object.keys(exportData[0] || {}).map((key) => ({
-      wch: Math.max(key.length, 15),
-    }))
-    worksheet["!cols"] = colWidths
-
-    const fileName = `GOSAI_CLINIC_All_Patients_${new Date().toISOString().split("T")[0]}.xlsx`
-    XLSX.writeFile(workbook, fileName)
   }
 
   const startEdit = (patient: Patient) => {
@@ -321,7 +330,7 @@ export default function PatientsPage() {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Patient  - ${selectedPatient.firstName} ${selectedPatient.lastName}</title>
+    <title>Patient Bill - ${selectedPatient.firstName} ${selectedPatient.lastName}</title>
     <style>
         * {
             margin: 0;
@@ -332,10 +341,10 @@ export default function PatientsPage() {
         body {
             font-family: 'Arial', sans-serif;
             font-size: 10pt;
-            line-height: 1.3;
+            line-height: 1.4;
             color: #333;
             background: white;
-            padding: 10px;
+            padding: 15px;
             max-width: 210mm;
             margin: 0 auto;
         }
@@ -344,9 +353,11 @@ export default function PatientsPage() {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 10px;
+            padding: 12px 15px;
             border-bottom: 2px solid #3b82f6;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            background-color: #f8fafc;
+            border-radius: 6px 6px 0 0;
         }
         
         .clinic-branding {
@@ -355,16 +366,18 @@ export default function PatientsPage() {
         }
         
         .clinic-title {
-            font-size: 18pt;
+            font-size: 20pt;
             font-weight: bold;
             color: #1e40af;
-            line-height: 1;
+            line-height: 1.1;
+            letter-spacing: -0.5px;
         }
         
         .clinic-subtitle {
-            font-size: 9pt;
+            font-size: 10pt;
             color: #6b7280;
             font-style: italic;
+            margin-top: 2px;
         }
         
         .clinic-contact {
@@ -378,9 +391,10 @@ export default function PatientsPage() {
             justify-content: space-between;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            padding: 8px;
-            margin-bottom: 10px;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         
         .patient-primary-info {
@@ -388,16 +402,17 @@ export default function PatientsPage() {
         }
         
         .patient-name {
-            font-size: 12pt;
+            font-size: 14pt;
             font-weight: bold;
             color: #1e40af;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
+            letter-spacing: -0.3px;
         }
         
         .patient-id {
-            font-size: 8pt;
+            font-size: 9pt;
             color: #6b7280;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
         
         .patient-details {
@@ -434,32 +449,36 @@ export default function PatientsPage() {
         }
         
         .section-title {
-            font-size: 11pt;
+            font-size: 12pt;
             font-weight: bold;
             color: #1f2937;
-            margin-bottom: 5px;
-            padding-bottom: 3px;
-            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e5e7eb;
+            letter-spacing: -0.3px;
         }
         
         .medication-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 9pt;
-            margin-bottom: 8px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         
         .medication-table th {
             background: #f1f5f9;
-            color: #1f2937;
+            color: #1e40af;
             font-weight: bold;
             text-align: left;
-            padding: 4px;
+            padding: 8px 10px;
             border: 1px solid #e2e8f0;
         }
         
         .medication-table td {
-            padding: 4px;
+            padding: 8px 10px;
             border: 1px solid #e2e8f0;
             vertical-align: top;
         }
@@ -471,18 +490,20 @@ export default function PatientsPage() {
         .medication-name {
             font-weight: bold;
             color: #1f2937;
-            font-size: 9pt;
+            font-size: 10pt;
         }
         
         .medication-dose {
             color: #059669;
-            font-size: 8pt;
+            font-size: 9pt;
+            font-weight: 500;
         }
         
         .medication-qty {
             color: #dc2626;
-            font-size: 8pt;
+            font-size: 9pt;
             text-align: center;
+            font-weight: 500;
         }
         
         .no-medications {
@@ -499,12 +520,13 @@ export default function PatientsPage() {
         .prescription-info {
             display: flex;
             justify-content: space-between;
-            font-size: 8pt;
-            margin: 5px 0;
-            padding: 4px;
+            font-size: 9pt;
+            margin: 10px 0;
+            padding: 10px;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 4px;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         
         .doctor-info {
@@ -514,66 +536,71 @@ export default function PatientsPage() {
         
         .doctor-name {
             font-weight: bold;
-            margin-right: 5px;
-            font-size: 9pt;
+            margin-right: 8px;
+            font-size: 10pt;
             color: #1e40af;
         }
         
         .prescription-date {
             color: #6b7280;
-            font-size: 8pt;
+            font-size: 9pt;
         }
         
         .diagnosis-section {
-            font-size: 8pt;
-            padding: 4px;
+            font-size: 9pt;
+            padding: 10px 15px;
             background: #fef3c7;
             border: 1px solid #f59e0b;
-            border-radius: 4px;
-            margin-bottom: 5px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         
         .diagnosis-title {
             font-weight: bold;
             color: #92400e;
             display: inline;
-            margin-right: 5px;
+            margin-right: 8px;
+            font-size: 9pt;
         }
         
         .diagnosis-content {
             color: #78350f;
             display: inline;
+            font-size: 9pt;
         }
         
         .fee-section {
             text-align: right;
             font-weight: bold;
-            font-size: 10pt;
-            margin-top: 5px;
-            padding: 4px;
-            border-top: 1px solid #e2e8f0;
+            font-size: 11pt;
+            margin-top: 10px;
+            padding: 8px 10px;
+            border-top: 2px solid #e2e8f0;
+            color: #1e40af;
         }
         
         .page-footer {
-            margin-top: 10px;
+            margin-top: 20px;
             text-align: center;
-            font-size: 7pt;
+            font-size: 8pt;
             color: #9ca3af;
             border-top: 1px solid #e2e8f0;
-            padding-top: 5px;
+            padding-top: 10px;
         }
         
         .print-date {
-            font-size: 7pt;
+            font-size: 8pt;
             color: #6b7280;
             text-align: right;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
+            font-style: italic;
         }
         
         @media print {
             body { 
                 margin: 0; 
-                padding: 5px; 
+                padding: 10px; 
             }
             * {
                 -webkit-print-color-adjust: exact !important;
@@ -582,6 +609,11 @@ export default function PatientsPage() {
             }
             table { page-break-inside: avoid; }
             tr { page-break-inside: avoid; }
+            .clinic-header { box-shadow: none; }
+            .patient-card { box-shadow: none; }
+            .medication-table { box-shadow: none; }
+            .diagnosis-section { box-shadow: none; }
+            .prescription-info { box-shadow: none; }
         }
     </style>
 </head>
@@ -622,16 +654,12 @@ export default function PatientsPage() {
                     <span class="detail-label">Gender:</span>
                     <span class="detail-value">${selectedPatient.gender?.charAt(0).toUpperCase() + selectedPatient.gender?.slice(1) || "Not specified"}</span>
                 </div>
-                ${
-                  selectedPatient.bloodType
-                    ? `
+                ${selectedPatient.bloodType ? `
                 <div class="detail-item">
                     <span class="detail-label">Blood:</span>
                     <span class="detail-value" style="color: #dc2626; font-weight: bold;">${selectedPatient.bloodType}</span>
                 </div>
-                `
-                    : ""
-                }
+                ` : ""}
                 <div class="detail-item">
                     <span class="detail-label">Phone:</span>
                     <span class="detail-value">${selectedPatient.phone}</span>
@@ -648,27 +676,19 @@ export default function PatientsPage() {
         </div>
     </div>
         
-    ${
-      selectedPatient.allergies
-        ? `
+    ${selectedPatient.allergies ? `
     <div class="diagnosis-section" style="background: #fee2e2; border-color: #ef4444;">
         <span class="diagnosis-title" style="color: #dc2626;">⚠️ Allergies:</span>
         <span class="diagnosis-content" style="color: #991b1b;">${selectedPatient.allergies}</span>
     </div>
-    `
-        : ""
-    }
+    ` : ""}
     
-    ${
-      selectedPatient.medicalHistory
-        ? `
+    ${selectedPatient.medicalHistory ? `
     <div class="diagnosis-section" style="background: #f0f9ff; border-color: #0ea5e9;">
         <span class="diagnosis-title" style="color: #0c4a6e;">Medical History:</span>
         <span class="diagnosis-content" style="color: #075985;">${selectedPatient.medicalHistory}</span>
     </div>
-    `
-        : ""
-    }
+    ` : ""}
     </div>
     
     <div class="medications-section">
@@ -676,55 +696,40 @@ export default function PatientsPage() {
         
         ${
           prescriptionGroups.length > 0
-            ? prescriptionGroups
-                .map(
-                  (group, index) => `
-            ${
-              group.prescription.diagnosis
-                ? `
+            ? prescriptionGroups.map((group, index) => `
+            ${group.prescription.diagnosis ? `
             <div class="diagnosis-section">
                 <span class="diagnosis-title">Diagnosis:</span>
                 <span class="diagnosis-content">${group.prescription.diagnosis}</span>
             </div>
-            `
-                : ""
-            }
+            ` : ""}
             
             <div class="prescription-info">
                 <div class="doctor-info">
-                    <span class="doctor-name">${
-                      group.prescription.doctorName?.startsWith("Dr.")
-                        ? group.prescription.doctorName
-                        : `Dr. ${group.prescription.doctorName || "Not Specified"}`
-                    }</span>
+                    <span class="doctor-name">Dr. ${group.prescription.doctorName || "Not Specified"}</span>
                     <span class="prescription-date">Prescribed: ${group.prescription.prescriptionDate || "Date not specified"}</span>
                 </div>
             </div>
             
-            ${
-              group.prescription.investigation
-                ? `
-            <div class="diagnosis-section" style="background: #f0fdf4; border-color: #22c55e;">
-                <span class="diagnosis-title" style="color: #15803d;">Investigation:</span>
-                <span class="diagnosis-content" style="color: #166534;">${group.prescription.investigation}</span>
+            ${group.prescription.investigation ? `
+            <div class="diagnosis-section" style="background: #f0fdf4; border-color: #22c55e; padding: 12px 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <span class="diagnosis-title" style="color: #15803d; font-size: 9pt; margin-right: 8px;">Investigation:</span>
+                <span class="diagnosis-content" style="color: #166534; font-size: 9pt;">${group.prescription.investigation}</span>
             </div>
-            `
-                : ""
-            }
+            ` : ""}
             
             <table class="medication-table">
                 <thead>
                     <tr>
-                        <th style="width: 8%;">No</th>
-                        <th style="width: 45%;">Medicine</th>
-                        <th style="width: 30%;">Dosage</th>
-                        <th style="width: 17%;">Qty</th>
+                        <th style="width: 5%;">No</th>
+                        <th style="width: 30%;">Medicine</th>
+                        <th style="width: 25%;">Dosage</th>
+                        <th style="width: 10%;">Qty</th>
+                        <th style="width: 30%;">Instructions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${group.medications
-                      .map(
-                        (medication, medIndex) => `
+                    ${group.medications.map((medication, medIndex) => `
                         <tr>
                             <td style="text-align: center;">${medIndex + 1}</td>
                             <td>
@@ -736,10 +741,11 @@ export default function PatientsPage() {
                             <td>
                                 <div class="medication-qty">${medication.qty || "As needed"}</div>
                             </td>
+                            <td style="font-size: 8pt;">
+                                ${medication.instructions || "Follow doctor's advice"}
+                            </td>
                         </tr>
-                    `,
-                      )
-                      .join("")}
+                    `).join("")}
                     </tbody>
                 </table>
                 
@@ -769,7 +775,7 @@ export default function PatientsPage() {
                 )
                 .join("")
             : `
-            <div class="no-medications">
+            <div class="no-medications" style="text-align: center; padding: 15px; color: #6b7280; font-style: italic; font-size: 9pt; border: 1px dashed #e2e8f0; border-radius: 6px; margin: 10px 0;">
                 <div>No medications prescribed for this patient</div>
                 <div style="font-size: 9pt; margin-top: 5px; color: #9ca3af;">Please consult with the doctor for medical advice</div>
             </div>
@@ -790,12 +796,12 @@ export default function PatientsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 dark:text-gray-100">
       <Navigation />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
-        <div className="mb-6 lg:mb-8">
-          <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 lg:py-8">
+        <div className="mb-4 sm:mb-6 lg:mb-8">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white flex items-center space-x-2">
-                <Users className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 dark:text-blue-500" />
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white flex items-center space-x-2">
+                <Users className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-blue-600 dark:text-blue-500" />
                 <span>All Patients - GOSAI CLINIC</span>
               </h1>
               <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 mt-2">
@@ -805,15 +811,15 @@ export default function PatientsPage() {
             </div>
             <Button
               onClick={exportToExcel}
-              className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 w-full sm:w-auto"
+              className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white"
             >
-              <Download className="h-4 w-4 mr-2" />
-              Export to Excel
+              <FileSpreadsheet className="h-4 w-4" />
+              <span>Export to Excel</span>
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           <div className="lg:col-span-2">
             <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800">
               <CardHeader>
@@ -826,17 +832,17 @@ export default function PatientsPage() {
                   </div>
                   <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                     <div className="relative flex-1">
-                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                      <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 dark:text-gray-500" />
                       <Input
                         placeholder="Search patients..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-8 w-full"
+                        className="pl-8 w-full text-sm h-9"
                       />
                     </div>
                     <Select value={genderFilter} onValueChange={setGenderFilter}>
-                      <SelectTrigger className="w-full sm:w-32">
-                        <Filter className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
+                      <SelectTrigger className="w-full sm:w-32 h-9 text-xs sm:text-sm">
+                        <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-gray-400 dark:text-gray-500" />
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -876,7 +882,7 @@ export default function PatientsPage() {
                           }`}
                           onClick={() => setSelectedPatient(patient)}
                         >
-                          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
+                          <div className="flex flex-col sm:flex-row sm:items-start lg:items-center lg:justify-between space-y-3 sm:space-y-0">
                             <div className="flex-1">
                               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
                                 <h3 className="font-semibold text-base lg:text-lg">
@@ -903,7 +909,7 @@ export default function PatientsPage() {
                                 </p>
                               </div>
                             </div>
-                            <div className="flex flex-row lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2">
+                            <div className="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2">
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -959,22 +965,22 @@ export default function PatientsPage() {
 
           <div className="lg:col-span-1">
             <Card className="lg:sticky lg:top-8 border-gray-200 dark:border-gray-700 dark:bg-gray-800">
-              <CardHeader>
-                <CardTitle className="text-lg lg:text-xl dark:text-white">Patient Details</CardTitle>
-                <CardDescription className="text-sm lg:text-base dark:text-gray-300">
+              <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
+                <CardTitle className="text-base sm:text-lg lg:text-xl dark:text-white">Patient Details</CardTitle>
+                <CardDescription className="text-xs sm:text-sm lg:text-base dark:text-gray-300">
                   {selectedPatient ? "Detailed information" : "Select a patient to view details"}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 py-3 sm:px-6 sm:py-5">
                 {selectedPatient ? (
-                  <div className="space-y-4 lg:space-y-6">
+                  <div className="space-y-3 sm:space-y-4 lg:space-y-6">
                     {!isEditing && (
                       <>
                         <div>
-                          <h4 className="font-semibold text-base lg:text-lg mb-3">
+                          <h4 className="font-semibold text-sm sm:text-base lg:text-lg mb-2 sm:mb-3">
                             {selectedPatient.firstName} {selectedPatient.lastName}
                           </h4>
-                          <div className="space-y-2 text-xs lg:text-sm">
+                          <div className="space-y-1.5 sm:space-y-2 text-xs lg:text-sm">
                             <div className="flex items-center space-x-2">
                               <span className="font-medium">Patient ID:</span>
                               <span>{selectedPatient.id}</span>
@@ -997,8 +1003,8 @@ export default function PatientsPage() {
                         </div>
 
                         <div>
-                          <h5 className="font-medium mb-2 text-sm lg:text-base">Contact Information</h5>
-                          <div className="space-y-2 text-xs lg:text-sm">
+                          <h5 className="font-medium mb-1.5 sm:mb-2 text-xs sm:text-sm lg:text-base">Contact Information</h5>
+                          <div className="space-y-1.5 sm:space-y-2 text-xs lg:text-sm">
                             <div className="flex items-center space-x-2">
                               <Phone className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 dark:text-gray-500" />
                               <span>{selectedPatient.phone}</span>
@@ -1011,8 +1017,8 @@ export default function PatientsPage() {
                         </div>
 
                         <div>
-                          <h5 className="font-medium mb-2 text-sm lg:text-base">Medical Information</h5>
-                          <div className="space-y-2 text-xs lg:text-sm">
+                          <h5 className="font-medium mb-1.5 sm:mb-2 text-xs sm:text-sm lg:text-base">Medical Information</h5>
+                          <div className="space-y-1.5 sm:space-y-2 text-xs lg:text-sm">
                             <div>
                               <span className="font-medium">Medical History:</span>
                               <p className="text-gray-600 dark:text-gray-400">
@@ -1029,26 +1035,26 @@ export default function PatientsPage() {
                         </div>
 
                         <div className="space-y-2">
-                          <Button className="w-full" asChild>
+                          <Button className="w-full h-8 sm:h-9 text-xs sm:text-sm" asChild>
                             <a href={`/appointments/book?patientId=${selectedPatient.id}`}>
-                              <Calendar className="h-4 w-4 mr-2" />
+                              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                               Schedule Appointment
                             </a>
                           </Button>
                           <Button
                             variant="outline"
-                            className="w-full bg-transparent dark:bg-transparent"
+                            className="w-full bg-transparent dark:bg-transparent h-8 sm:h-9 text-xs sm:text-sm"
                             onClick={() => startEdit(selectedPatient)}
                           >
-                            <Edit className="h-4 w-4 mr-2" />
+                            <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                             Update Information
                           </Button>
                           <Button
                             variant="secondary"
-                            className="w-full"
+                            className="w-full h-8 sm:h-9 text-xs sm:text-sm"
                             onClick={() => handlePrintPatient(selectedPatient)}
                           >
-                            <Printer className="h-4 w-4 mr-2" />
+                            <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                             Print Details
                           </Button>
                         </div>
@@ -1169,10 +1175,10 @@ export default function PatientsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md h-10 min-w-[100px] px-4 shadow-md transition"
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-800/40 dark:text-blue-300 dark:border-blue-800/50"
                       onClick={printDocument}
                     >
-                      <Printer className="h-5 w-4 mr-2" />
+                      <Printer className="h-4 w-4 mr-2" />
                       Print
                     </Button>
                     <Button
@@ -1275,41 +1281,42 @@ export default function PatientsPage() {
 
         {/* Print Preview Modal */}
         {showPrintPreview && selectedPatient && (
-          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl max-w-5xl w-full max-h-[95vh] overflow-hidden border border-gray-200 dark:border-gray-700 shadow-2xl">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Print Preview</h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-8">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden border border-gray-200 dark:border-gray-700 shadow-2xl">
+              <div className="p-8 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Print Preview</h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       Patient Report - {selectedPatient.firstName} {selectedPatient.lastName}
                     </p>
                   </div>
-                  <div className="flex items-center gap-6 ml-8">
+                  <div className="flex items-center space-x-6">
                     <Button
                       onClick={printDocument}
-                      className="bg-none shadow-lg mx-3 my-4"
+                      className="bg-blue-600 hover:bg-blue-700 px-8 py-3 text-base rounded-lg dark:bg-blue-700 dark:hover:bg-blue-800 shadow-lg transition-all duration-200"
                     >
-                      <Printer className="h-4 w-4 mr-2" />
+                      <Printer className="h-5 w-5 mr-3" />
                       Print Document
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => setShowPrintPreview(false)}
-                      className="p-2.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 border-gray-300 pl-2 "
-                      aria-label="Close print preview"
+                      className="p-3 rounded-lg dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 transition-all duration-200"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-6 w-6" />
                     </Button>
                   </div>
                 </div>
               </div>
 
-              <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
-                <div
-                  className="active-print p-8 bg-white text-black"
-                  dangerouslySetInnerHTML={{ __html: generatePrintHTML() }}
-                />
+              <div className="overflow-y-auto max-h-[calc(90vh-160px)]">
+                <div className="p-8 md:p-12 lg:p-16">
+                  <div
+                    className="active-print bg-white text-black rounded-lg shadow-sm border border-gray-100 p-8 md:p-12"
+                    dangerouslySetInnerHTML={{ __html: generatePrintHTML() }}
+                  />
+                </div>
               </div>
             </div>
           </div>

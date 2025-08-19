@@ -10,8 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Search, Plus, User, Pill, Download, FileText } from "lucide-react"
-import * as XLSX from "xlsx"
+import { Search, Plus, User, Pill, FileText } from "lucide-react"
 import { Navigation } from "@/components/navigation"
 import { MedicineAutocomplete } from "@/components/ui/medicine-autocomplete"
 
@@ -147,25 +146,7 @@ export default function PrescriptionsPage() {
     setShowNewPrescription(false)
   }
 
-  const exportToExcel = () => {
-    const exportData = prescriptions.map((prescription) => ({
-      "Prescription ID": prescription.id,
-      "Patient Name": prescription.patientName,
-      Doctor: prescription.doctorName,
-      Diagnosis: prescription.diagnosis,
-      Medications: prescription.medications
-        .map((med) => `${med.name} - ${med.dosage} - ${med.frequency.join(", ")} for ${med.duration}`)
-        .join("; "),
-      "Prescription Date": prescription.prescriptionDate,
-      Status: prescription.status,
-      Notes: prescription.notes,
-    }))
-
-    const ws = XLSX.utils.json_to_sheet(exportData)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, "Prescriptions")
-    XLSX.writeFile(wb, `GOSAI_CLINIC_Prescriptions_${new Date().toISOString().split("T")[0]}.xlsx`)
-  }
+  // Excel export feature has been removed
 
   const removeMedication = (index: number) => {
     const updatedMedications = medications.filter((_, i) => i !== index)
@@ -196,14 +177,7 @@ export default function PrescriptionsPage() {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <Button
-                onClick={exportToExcel}
-                variant="outline"
-                className="bg-transparent border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
-              >
-                <Download className="mr-2 h-4 w-4 opacity-70" />
-                Export
-              </Button>
+              {/* Export button removed */}
               <Button onClick={() => setShowNewPrescription(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 New Prescription

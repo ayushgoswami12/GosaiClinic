@@ -245,39 +245,7 @@ export default function HomePage() {
               <span>Register New Patient</span>
             </Link>
 
-            <button
-              onClick={() => {
-                const patients = JSON.parse(localStorage.getItem("patients") || "[]")
-                if (patients.length === 0) {
-                  alert("No patients to export")
-                  return
-                }
-
-                // Simple CSV export
-                const csvContent =
-                  "data:text/csv;charset=utf-8," +
-                  "Name,Phone,Email,Age,Gender,Address,Emergency Contact,Emergency Phone,Medical History\n" +
-                  patients
-                    .map(
-                      (p) =>
-                        `"${p.firstName} ${p.lastName}","${p.phone}","${p.email}","${p.age}","${p.gender}","${p.address}","${p.emergencyContact}","${p.emergencyPhone}","${p.medicalHistory}"`,
-                    )
-                    .join("\n")
-
-                const encodedUri = encodeURI(csvContent)
-                const link = document.createElement("a")
-                link.setAttribute("href", encodedUri)
-                link.setAttribute("download", `GOSAI_CLINIC_Patients_${new Date().toISOString().split("T")[0]}.csv`)
-                document.body.appendChild(link)
-                link.click()
-                document.body.removeChild(link)
-                setSidebarOpen(false)
-              }}
-              className="flex items-center space-x-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 rounded-lg transition-colors w-full text-left"
-            >
-              <FileText className="w-5 h-5" />
-              <span>Export Patient Data</span>
-            </button>
+            {/* CSV export feature removed */}
 
             <Link
               href="/appointments/book"
