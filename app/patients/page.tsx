@@ -1169,10 +1169,10 @@ export default function PatientsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-800/40 dark:text-blue-300 dark:border-blue-800/50"
+                      className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md h-10 min-w-[100px] px-4 shadow-md transition"
                       onClick={printDocument}
                     >
-                      <Printer className="h-4 w-4 mr-2" />
+                      <Printer className="h-5 w-4 mr-2" />
                       Print
                     </Button>
                     <Button
@@ -1288,7 +1288,7 @@ export default function PatientsPage() {
                   <div className="flex items-center gap-6 ml-8">
                     <Button
                       onClick={printDocument}
-                      className="bg-blue-600 hover:bg-blue-700 px-6 py-2 text-sm dark:bg-blue-700 dark:hover:bg-blue-800 shadow-lg"
+                      className="bg-none shadow-lg mx-3 my-4"
                     >
                       <Printer className="h-4 w-4 mr-2" />
                       Print Document
@@ -1296,7 +1296,7 @@ export default function PatientsPage() {
                     <Button
                       variant="outline"
                       onClick={() => setShowPrintPreview(false)}
-                      className="p-2.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 border-gray-300 ml-2"
+                      className="p-2.5 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 border-gray-300 pl-2 "
                       aria-label="Close print preview"
                     >
                       <X className="h-4 w-4" />
