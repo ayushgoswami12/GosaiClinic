@@ -7,7 +7,25 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Navigation } from "@/components/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, Users, Edit, Phone, MapPin, Calendar, Pill, X, Printer, FileSpreadsheet, Clock, AlertCircle, User, ClipboardList, FileText } from "lucide-react"
+import {
+  Search,
+  Filter,
+  Users,
+  Edit,
+  Phone,
+  MapPin,
+  Calendar,
+  Pill,
+  X,
+  Printer,
+  FileSpreadsheet,
+  Clock,
+  AlertCircle,
+  User,
+  ClipboardList,
+  FileText,
+  FilePlus,
+} from "lucide-react"
 
 interface Patient {
   id: string
@@ -185,58 +203,58 @@ export default function PatientsPage() {
   // Excel export feature
   const exportToExcel = () => {
     if (patients.length === 0) return
-    
+
     // Import xlsx dynamically to avoid SSR issues
-    import('xlsx').then((XLSX) => {
+    import("xlsx").then((XLSX) => {
       // Prepare data for export
-      const data = filteredPatients.map(patient => {
+      const data = filteredPatients.map((patient) => {
         // Get medications for this patient
         const patientPrescriptions = getMedicationsForPatient(patient.id)
-        
+
         // Extract all medication names from prescriptions
         const medicationNames: string[] = []
-        patientPrescriptions.forEach(prescription => {
-          prescription.medications.forEach(medication => {
+        patientPrescriptions.forEach((prescription) => {
+          prescription.medications.forEach((medication) => {
             medicationNames.push(medication.name)
           })
         })
-        
+
         // Join medication names with commas
-        const treatmentText = medicationNames.length > 0 ? medicationNames.join(', ') : 'None'
-        
+        const treatmentText = medicationNames.length > 0 ? medicationNames.join(", ") : "None"
+
         // Get investigation reports from prescriptions if available
         const investigationReports: string[] = []
-        
+
         // Reuse the same patientPrescriptions variable we already have
-        patientPrescriptions.forEach(prescription => {
-          if (prescription.investigation && prescription.investigation.trim() !== '') {
+        patientPrescriptions.forEach((prescription) => {
+          if (prescription.investigation && prescription.investigation.trim() !== "") {
             investigationReports.push(prescription.investigation)
           }
         })
-        
-        const investigationText = investigationReports.length > 0 ? investigationReports.join(', ') : 'None'
-        
+
+        const investigationText = investigationReports.length > 0 ? investigationReports.join(", ") : "None"
+
         return {
           Name: `${patient.firstName} ${patient.lastName}`,
           Age: patient.age,
           Gender: patient.gender,
           Place: patient.address,
-          'Ph No': patient.phone,
-          'Complain': patient.medicalHistory || 'None reported',
-          'Reports': investigationText,
-          'Treatment': treatmentText
+          "Ph No": patient.phone,
+          Complain: patient.medicalHistory || "None reported",
+          Reports: investigationText,
+          Treatment: treatmentText,
         }
       })
 
       // Create worksheet
       const worksheet = XLSX.utils.json_to_sheet(data)
-      
+
       // Create workbook
       const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Patients')
-      
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Patients")
+
       // Generate Excel file and trigger download
-      XLSX.writeFile(workbook, 'Patients_List.xlsx')
+      XLSX.writeFile(workbook, "Patients_List.xlsx")
     })
   }
 
@@ -654,12 +672,16 @@ export default function PatientsPage() {
                     <span class="detail-label">Gender:</span>
                     <span class="detail-value">${selectedPatient.gender?.charAt(0).toUpperCase() + selectedPatient.gender?.slice(1) || "Not specified"}</span>
                 </div>
-                ${selectedPatient.bloodType ? `
+                ${
+                  selectedPatient.bloodType
+                    ? `
                 <div class="detail-item">
                     <span class="detail-label">Blood:</span>
                     <span class="detail-value" style="color: #dc2626; font-weight: bold;">${selectedPatient.bloodType}</span>
                 </div>
-                ` : ""}
+                `
+                    : ""
+                }
                 <div class="detail-item">
                     <span class="detail-label">Phone:</span>
                     <span class="detail-value">${selectedPatient.phone}</span>
@@ -676,19 +698,27 @@ export default function PatientsPage() {
         </div>
     </div>
         
-    ${selectedPatient.allergies ? `
+    ${
+      selectedPatient.allergies
+        ? `
     <div class="diagnosis-section" style="background: #fee2e2; border-color: #ef4444;">
         <span class="diagnosis-title" style="color: #dc2626;">⚠️ Allergies:</span>
         <span class="diagnosis-content" style="color: #991b1b;">${selectedPatient.allergies}</span>
     </div>
-    ` : ""}
+    `
+        : ""
+    }
     
-    ${selectedPatient.medicalHistory ? `
+    ${
+      selectedPatient.medicalHistory
+        ? `
     <div class="diagnosis-section" style="background: #f0f9ff; border-color: #0ea5e9;">
         <span class="diagnosis-title" style="color: #0c4a6e;">Medical History:</span>
         <span class="diagnosis-content" style="color: #075985;">${selectedPatient.medicalHistory}</span>
     </div>
-    ` : ""}
+    `
+        : ""
+    }
     </div>
     
     <div class="medications-section">
@@ -696,13 +726,19 @@ export default function PatientsPage() {
         
         ${
           prescriptionGroups.length > 0
-            ? prescriptionGroups.map((group, index) => `
-            ${group.prescription.diagnosis ? `
+            ? prescriptionGroups
+                .map(
+                  (group, index) => `
+            ${
+              group.prescription.diagnosis
+                ? `
             <div class="diagnosis-section">
                 <span class="diagnosis-title">Diagnosis:</span>
                 <span class="diagnosis-content">${group.prescription.diagnosis}</span>
             </div>
-            ` : ""}
+            `
+                : ""
+            }
             
             <div class="prescription-info">
                 <div class="doctor-info">
@@ -711,25 +747,30 @@ export default function PatientsPage() {
                 </div>
             </div>
             
-            ${group.prescription.investigation ? `
+            ${
+              group.prescription.investigation
+                ? `
             <div class="diagnosis-section" style="background: #f0fdf4; border-color: #22c55e; padding: 12px 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                 <span class="diagnosis-title" style="color: #15803d; font-size: 9pt; margin-right: 8px;">Investigation:</span>
                 <span class="diagnosis-content" style="color: #166534; font-size: 9pt;">${group.prescription.investigation}</span>
             </div>
-            ` : ""}
+            `
+                : ""
+            }
             
             <table class="medication-table">
                 <thead>
                     <tr>
-                        <th style="width: 5%;">No</th>
-                        <th style="width: 30%;">Medicine</th>
-                        <th style="width: 25%;">Dosage</th>
+                        <th style="width: 8%;">No</th>
+                        <th style="width: 50%;">Medicine</th>
+                        <th style="width: 32%;">Dosage</th>
                         <th style="width: 10%;">Qty</th>
-                        <th style="width: 30%;">Instructions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${group.medications.map((medication, medIndex) => `
+                    ${group.medications
+                      .map(
+                        (medication, medIndex) => `
                         <tr>
                             <td style="text-align: center;">${medIndex + 1}</td>
                             <td>
@@ -741,11 +782,10 @@ export default function PatientsPage() {
                             <td>
                                 <div class="medication-qty">${medication.qty || "As needed"}</div>
                             </td>
-                            <td style="font-size: 8pt;">
-                                ${medication.instructions || "Follow doctor's advice"}
-                            </td>
                         </tr>
-                    `).join("")}
+                    `,
+                      )
+                      .join("")}
                     </tbody>
                 </table>
                 
@@ -1003,7 +1043,9 @@ export default function PatientsPage() {
                         </div>
 
                         <div>
-                          <h5 className="font-medium mb-1.5 sm:mb-2 text-xs sm:text-sm lg:text-base">Contact Information</h5>
+                          <h5 className="font-medium mb-1.5 sm:mb-2 text-xs sm:text-sm lg:text-base">
+                            Contact Information
+                          </h5>
                           <div className="space-y-1.5 sm:space-y-2 text-xs lg:text-sm">
                             <div className="flex items-center space-x-2">
                               <Phone className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 dark:text-gray-500" />
@@ -1017,7 +1059,9 @@ export default function PatientsPage() {
                         </div>
 
                         <div>
-                          <h5 className="font-medium mb-1.5 sm:mb-2 text-xs sm:text-sm lg:text-base">Medical Information</h5>
+                          <h5 className="font-medium mb-1.5 sm:mb-2 text-xs sm:text-sm lg:text-base">
+                            Medical Information
+                          </h5>
                           <div className="space-y-1.5 sm:space-y-2 text-xs lg:text-sm">
                             <div>
                               <span className="font-medium">Medical History:</span>
@@ -1164,14 +1208,18 @@ export default function PatientsPage() {
                   <div>
                     <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white flex items-center">
                       <Pill className="h-6 w-6 lg:h-7 lg:w-7 mr-3 text-green-600 dark:text-green-500" />
-                      <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Medication History</span>
+                      <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                        Medication History
+                      </span>
                     </h2>
                     <div className="mt-2 flex items-center">
                       <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-2">
                         <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       </div>
                       <p className="text-sm lg:text-base text-gray-600 dark:text-gray-300 font-medium">
-                        {selectedPatient?.firstName} {selectedPatient?.lastName} <span className="text-gray-400 dark:text-gray-500">•</span> Age: {selectedPatient?.age} <span className="text-gray-400 dark:text-gray-500">•</span> ID: {selectedPatient?.id}
+                        {selectedPatient?.firstName} {selectedPatient?.lastName}{" "}
+                        <span className="text-gray-400 dark:text-gray-500">•</span> Age: {selectedPatient?.age}{" "}
+                        <span className="text-gray-400 dark:text-gray-500">•</span> ID: {selectedPatient?.id}
                       </p>
                     </div>
                   </div>
@@ -1203,9 +1251,13 @@ export default function PatientsPage() {
                     </div>
                     <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-3">No medications found</h3>
                     <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                      This patient has no prescription history yet. You can create a new prescription to add medications.
+                      This patient has no prescription history yet. You can create a new prescription to add
+                      medications.
                     </p>
-                    <Button asChild className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200">
+                    <Button
+                      asChild
+                      className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200"
+                    >
                       <a href="/prescriptions">
                         <FilePlus className="h-4 w-4 mr-2" />
                         Create New Prescription
@@ -1220,10 +1272,13 @@ export default function PatientsPage() {
                         Total Prescriptions: {selectedPatientMedications.length}
                       </h3>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
-                        Last updated: {new Date(Math.max(...selectedPatientMedications.map(p => new Date(p.date).getTime()))).toLocaleDateString()}
+                        Last updated:{" "}
+                        {new Date(
+                          Math.max(...selectedPatientMedications.map((p) => new Date(p.date).getTime())),
+                        ).toLocaleDateString()}
                       </div>
                     </div>
-                    
+
                     {selectedPatientMedications.map((prescription) => (
                       <Card
                         key={prescription.id}
@@ -1238,7 +1293,7 @@ export default function PatientsPage() {
                               </CardTitle>
                               <CardDescription className="dark:text-gray-300 mt-1 flex items-center">
                                 <User className="h-3.5 w-3.5 mr-1.5 text-gray-400 dark:text-gray-500" />
-                                Dr. {prescription.doctorName} 
+                                Dr. {prescription.doctorName}
                                 <span className="mx-2 text-gray-300 dark:text-gray-600">•</span>
                                 <Calendar className="h-3.5 w-3.5 mr-1.5 text-gray-400 dark:text-gray-500" />
                                 {new Date(prescription.date).toLocaleDateString()}
@@ -1261,7 +1316,10 @@ export default function PatientsPage() {
                                 >
                                   <div className="flex items-start justify-between mb-3">
                                     <h4 className="font-semibold text-base lg:text-lg text-gray-900 dark:text-white flex items-center">
-                                      <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: category.color }}></span>
+                                      <span
+                                        className="w-2 h-2 rounded-full mr-2"
+                                        style={{ backgroundColor: category.color }}
+                                      ></span>
                                       {medication.name}
                                     </h4>
                                     <Badge
@@ -1275,37 +1333,52 @@ export default function PatientsPage() {
                                     <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                                       <div className="flex items-center mb-2">
                                         <Clock className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 mr-1.5" />
-                                        <span className="font-medium text-gray-700 dark:text-gray-300">Dosage Schedule</span>
+                                        <span className="font-medium text-gray-700 dark:text-gray-300">
+                                          Dosage Schedule
+                                        </span>
                                       </div>
                                       <div className="flex flex-wrap gap-2 mb-2">
-                                        {Array.isArray(medication.frequency) && medication.frequency.map((freq, i) => (
-                                          <span key={i} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                                            {freq}
+                                        {Array.isArray(medication.frequency) &&
+                                          medication.frequency.map((freq, i) => (
+                                            <span
+                                              key={i}
+                                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                            >
+                                              {freq}
+                                            </span>
+                                          ))}
+                                        {(!Array.isArray(medication.frequency) ||
+                                          medication.frequency.length === 0) && (
+                                          <span className="text-gray-500 dark:text-gray-400 text-xs">
+                                            No frequency specified
                                           </span>
-                                        ))}
-                                        {(!Array.isArray(medication.frequency) || medication.frequency.length === 0) && (
-                                          <span className="text-gray-500 dark:text-gray-400 text-xs">No frequency specified</span>
                                         )}
                                       </div>
                                       <div className="grid grid-cols-2 gap-2 text-xs">
                                         <div className="flex items-center">
                                           <span className="w-2 h-2 rounded-full bg-purple-500 mr-1.5"></span>
                                           <span className="text-gray-500 dark:text-gray-400">Dosage:</span>
-                                          <span className="ml-1 font-medium text-gray-700 dark:text-gray-300">{medication.dosage || "Not specified"}</span>
+                                          <span className="ml-1 font-medium text-gray-700 dark:text-gray-300">
+                                            {medication.dosage || "Not specified"}
+                                          </span>
                                         </div>
                                         <div className="flex items-center">
                                           <span className="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>
                                           <span className="text-gray-500 dark:text-gray-400">Duration:</span>
-                                          <span className="ml-1 font-medium text-gray-700 dark:text-gray-300">{medication.duration || "Not specified"}</span>
+                                          <span className="ml-1 font-medium text-gray-700 dark:text-gray-300">
+                                            {medication.duration || "Not specified"}
+                                          </span>
                                         </div>
                                       </div>
                                     </div>
-                                    
+
                                     {medication.instructions && (
                                       <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-100 dark:border-yellow-900/30">
                                         <div className="flex items-center mb-1.5">
                                           <AlertCircle className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400 mr-1.5" />
-                                          <span className="font-medium text-amber-700 dark:text-amber-400">Special Instructions</span>
+                                          <span className="font-medium text-amber-700 dark:text-amber-400">
+                                            Special Instructions
+                                          </span>
                                         </div>
                                         <p className="text-gray-700 dark:text-gray-300">{medication.instructions}</p>
                                       </div>

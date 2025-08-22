@@ -81,22 +81,25 @@ export default function PatientRegistration() {
     dose: "",
     qty: "",
   })
+  const [customDose, setCustomDose] = useState("")
 
   const doctors = ["Dr. Tansukh Gosai", "Dr. Devang Gosai", "Dr. Dhara Gosai"]
 
   const frequencyOptions = [
-    "સવારે જામ્યા પહેલા",
-    "સવારે જમ્યા પછી",
-    "સવારે બાપોરે જામ્યા પહેલા",
-    "સવારે બાપોરે જામ્યા પછી",
-    "સવારે સાંજે જામ્યા પહેલા",
-    "સવારે સાંજે જામ્યા પછી",
-    "બોપોર જમ્યા પહેલા",
-    "બોપોર જમ્યા પછી",
-    "સાંજે જમ્યા પહેલા",
-    "સાંજે જમ્યા પછી",
-    "સવારે બોપોર સાંજે જમ્યા પહેલા",
-    "સવારે બોપોર સાંજે જમ્યા પછી",
+    "સવારે ભૂખ્યા પેટે ",
+    "સવારે જમીને",
+    "સવાર સાંજ ભૂખ્યા પેટે",
+    "સવાર બોપોર સાંજ ભૂખ્યા પેટે",
+
+    "બપોરે ભૂખ્યા પેટે",
+    "બપોરે જમીને",
+    "સવાર સાંજ જમીને ",
+    "સવાર બોપોર સાંજ જમીને",
+
+    "રાત્રે  ભૂખ્યા પેટે",
+    "રાત્રે જમીને",
+    "જરૃર પડે તો ",
+    "CUSTOM",
   ]
 
   useEffect(() => {
@@ -110,15 +113,18 @@ export default function PatientRegistration() {
       return
     }
 
+    const doseToUse = currentMedication.dose === "CUSTOM" ? customDose : currentMedication.dose
+
     const newMedication: MedicationEntry = {
       id: Date.now().toString(),
       name: currentMedication.name,
-      dose: currentMedication.dose,
+      dose: doseToUse,
       qty: currentMedication.qty,
     }
 
     setMedicationTable([...medicationTable, newMedication])
     setCurrentMedication({ name: "", dose: "", qty: "" })
+    setCustomDose("")
   }
 
   const removeMedicationFromTable = (id: string) => {
@@ -479,7 +485,7 @@ export default function PatientRegistration() {
                     <div className="space-y-4">
                       <div>
                         <Label className="text-base font-medium mb-3 block">Dose</Label>
-                        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
+                        <div className="grid grid-cols-4 gap-2 sm:gap-3">
                           {frequencyOptions.map((option) => (
                             <div
                               key={option}
@@ -502,11 +508,23 @@ export default function PatientRegistration() {
                                 )}
                               </div>
                               <span className="text-xs sm:text-sm text-center text-gray-700 dark:text-gray-300 leading-tight font-medium">
-                                {option}
+                                {option === "CUSTOM" ? "Custom" : option}
                               </span>
                             </div>
                           ))}
                         </div>
+                        {currentMedication.dose === "CUSTOM" && (
+                          <div className="mt-4">
+                            <Label htmlFor="customDose">Enter Custom Dose</Label>
+                            <Input
+                              id="customDose"
+                              value={customDose}
+                              onChange={(e) => setCustomDose(e.target.value)}
+                              placeholder="Enter custom dose instructions"
+                              className="mt-2"
+                            />
+                          </div>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-3 gap-4 items-end">
