@@ -92,7 +92,6 @@ export default function PatientRegistration() {
     "સવાર સાંજ ભૂખ્યા પેટે",
     "સવાર બપોરે સાંજ ભૂખ્યા પેટે",
 
-
     "બપોરે ભૂખ્યા પેટે",
     "બપોરે જમીને",
     "સવાર સાંજ જમીને ",
@@ -219,43 +218,157 @@ export default function PatientRegistration() {
 
     setIsTranslating(true)
     try {
-      // Using Google Translate API via a proxy service
-      const response = await fetch(
-        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|gu`,
-      )
+      console.log("[v0] Starting translation for:", text)
+
+      // Using Google Translate API via RapidAPI
+      const response = await fetch("https://google-translate1.p.rapidapi.com/language/translate/v2", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Accept-Encoding": "application/gzip",
+          "X-RapidAPI-Key": process.env.NEXT_PUBLIC_RAPIDAPI_KEY || "your-rapidapi-key-here",
+          "X-RapidAPI-Host": "google-translate1.p.rapidapi.com",
+        },
+        body: new URLSearchParams({
+          q: text,
+          target: "gu",
+          source: "en",
+        }),
+      })
+
       const data = await response.json()
+      console.log("[v0] Translation response:", data)
 
-      if (data.responseStatus === 200 && data.responseData) {
-        return data.responseData.translatedText
-      } else {
-        // Fallback: Simple transliteration mapping for common medical terms
-        const commonTranslations: { [key: string]: string } = {
-          morning: "સવારે",
-          evening: "સાંજે",
-          night: "રાત્રે",
-          "before food": "ભૂખ્યા પેટે",
-          "after food": "જમીને",
-          tablet: "ગોળી",
-          capsule: "કેપ્સ્યુલ",
-          syrup: "સીરપ",
-          drops: "ટીપાં",
-          times: "વાર",
-          daily: "દરરોજ",
-          twice: "બે વાર",
-          thrice: "ત્રણ વાર",
-          "as needed": "જરૂર પડે તો",
-        }
-
-        let translatedText = text.toLowerCase()
-        Object.entries(commonTranslations).forEach(([english, gujarati]) => {
-          translatedText = translatedText.replace(new RegExp(english, "gi"), gujarati)
-        })
-
+      if (data.data && data.data.translations && data.data.translations[0]) {
+        const translatedText = data.data.translations[0].translatedText
+        console.log("[v0] Translation successful:", translatedText)
         return translatedText
+      } else {
+        throw new Error("Invalid response format")
       }
     } catch (error) {
-      console.error("Translation error:", error)
-      return text // Return original text if translation fails
+      console.error("[v0] Translation error:", error)
+
+      console.log("[v0] Using fallback transliteration")
+
+      // Comprehensive English to Gujarati transliteration mapping
+      const transliterationMap: { [key: string]: string } = {
+        // Vowels
+        a: "અ",
+        aa: "આ",
+        i: "ઇ",
+        ii: "ઈ",
+        u: "ઉ",
+        uu: "ઊ",
+        e: "એ",
+        ai: "ઐ",
+        o: "ઓ",
+        au: "ઔ",
+
+        // Consonants
+        k: "ક",
+        kh: "ખ",
+        g: "ગ",
+        gh: "ઘ",
+        ng: "ઙ",
+        ch: "ચ",
+        chh: "છ",
+        j: "જ",
+        jh: "ઝ",
+        ny: "ઞ",
+        t: "ત",
+        th: "થ",
+        d: "દ",
+        dh: "ધ",
+        n: "ન",
+        p: "પ",
+        ph: "ફ",
+        b: "બ",
+        bh: "ભ",
+        m: "મ",
+        y: "ય",
+        r: "ર",
+        l: "લ",
+        v: "વ",
+        w: "વ",
+        s: "સ",
+        sh: "શ",
+        h: "હ",
+
+        // Special combinations
+        tta: "ટ",
+        ttha: "ઠ",
+        dda: "ડ",
+        ddha: "ઢ",
+        nna: "ણ",
+        ksha: "ક્ષ",
+        gya: "જ્ઞ",
+
+        // Common medical terms and phrases
+        savare: "સવારે",
+        savar: "સવાર",
+        morning: "સવારે",
+        sanje: "સાંજે",
+        evening: "સાંજે",
+        saanj: "સાંજ",
+        ratre: "રાત્રે",
+        night: "રાત્રે",
+        raat: "રાત",
+        bapore: "બપોરે",
+        bapur: "બપોર",
+        afternoon: "બપોરે",
+        nathi: "નથી",
+        no: "નથી",
+        not: "નથી",
+        ane: "અને",
+        and: "અને",
+        jamne: "જમીને",
+        "after food": "જમીને",
+        jamike: "જમીને",
+        "bhukhya pate": "ભૂખ્યા પેટે",
+        "before food": "ભૂખ્યા પેટે",
+        goli: "ગોળી",
+        tablet: "ગોળી",
+        pill: "ગોળી",
+        var: "વાર",
+        times: "વાર",
+        vaar: "વાર",
+        jarur: "જરૂર",
+        need: "જરૂર",
+        jaroor: "જરૂર",
+        pade: "પડે",
+        pada: "પડે",
+        fall: "પડે",
+        to: "તો",
+        then: "તો",
+        toh: "તો",
+      }
+
+      // First try to match complete phrases
+      let result = text.toLowerCase()
+
+      // Sort by length (longest first) to match longer phrases first
+      const sortedKeys = Object.keys(transliterationMap).sort((a, b) => b.length - a.length)
+
+      for (const english of sortedKeys) {
+        const gujarati = transliterationMap[english]
+        const regex = new RegExp(`\\b${english}\\b`, "gi")
+        result = result.replace(regex, gujarati)
+      }
+
+      // If no matches found, do character-by-character transliteration
+      if (result === text.toLowerCase()) {
+        result = text
+          .toLowerCase()
+          .split("")
+          .map((char) => {
+            return transliterationMap[char] || char
+          })
+          .join("")
+      }
+
+      console.log("[v0] Fallback transliteration result:", result)
+      return result
     } finally {
       setIsTranslating(false)
     }
@@ -540,7 +653,7 @@ export default function PatientRegistration() {
 
                     <div className="space-y-4">
                       <div>
-                        <Label className="text-base font-medium mb-3 block">Dose</Label>
+                        <Label htmlFor="dose">Dose</Label>
                         <div className="grid grid-cols-4 gap-2 sm:gap-3">
                           {frequencyOptions.map((option) => (
                             <div
@@ -577,35 +690,41 @@ export default function PatientRegistration() {
                                 id="customDose"
                                 value={customDose}
                                 onChange={(e) => setCustomDose(e.target.value)}
-                                placeholder="Enter custom dose instructions in English"
+                                placeholder="Enter dose instructions (e.g., 'savare ane sanje jamike')"
                                 className="flex-1"
                               />
                               <Button
                                 type="button"
                                 onClick={handleTranslateCustomDose}
-                                disabled={isTranslating || !customDose.trim()}
+                                disabled={isTranslating}
                                 variant="outline"
                                 size="sm"
-                                className="px-3 bg-transparent"
+                                className="px-4 bg-blue-50 hover:bg-blue-100 border-blue-200 hover:border-blue-300"
+                                title="Translate to Gujarati"
                               >
                                 {isTranslating ? (
                                   <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
                                 ) : (
-                                  <Languages className="h-4 w-4" />
+                                  <>
+                                    <Languages className="h-4 w-4 mr-1" />
+                                    <span className="text-xs">ગુજ</span>
+                                  </>
                                 )}
                               </Button>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              For Accurate Results go to This Website{" "}
-                              <a
-                                href="https://www.easygujaratityping.com/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 underline"
-                              >
-                                https://www.easygujaratityping.com/
-                              </a>
-                            </p>
+                           <p className="text-xs text-gray-600 mt-1">
+  Go to{" "}
+  <a
+    href="https://www.easygujaratityping.com/"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-blue-600 font-medium hover:underline hover:text-blue-800"
+  >
+    easygujaratityping.com
+  </a>{" "}
+  for accurate Gujarati script conversion
+</p>
+
                           </div>
                         )}
                       </div>
