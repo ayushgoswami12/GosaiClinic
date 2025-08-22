@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, UserPlus, Users, Pill, ChevronDown, ChevronUp, CheckCircle, Trash2 } from "lucide-react"
+import { ArrowLeft, UserPlus, Users, Pill, ChevronDown, ChevronUp, CheckCircle, Trash2, Languages } from "lucide-react"
 import Link from "next/link"
 import { MedicineAutocomplete } from "@/components/ui/medicine-autocomplete"
 import { useRouter } from "next/navigation"
@@ -82,6 +82,7 @@ export default function PatientRegistration() {
     qty: "",
   })
   const [customDose, setCustomDose] = useState("")
+  const [isTranslating, setIsTranslating] = useState(false)
 
   const doctors = ["Dr. Tansukh Gosai", "Dr. Devang Gosai", "Dr. Dhara Gosai"]
 
@@ -89,12 +90,12 @@ export default function PatientRegistration() {
     "સવારે ભૂખ્યા પેટે ",
     "સવારે જમીને",
     "સવાર સાંજ ભૂખ્યા પેટે",
-    "સવાર બપોરે સાંજ ભૂખ્યા પેટે",
+    "સવાર બોપોર સાંજ ભૂખ્યા પેટે",
 
     "બપોરે ભૂખ્યા પેટે",
     "બપોરે જમીને",
     "સવાર સાંજ જમીને ",
-    "સવાર બપોરે સાંજ જમીને",
+    "સવાર બોપોર સાંજ જમીને",
 
     "રાત્રે  ભૂખ્યા પેટે",
     "રાત્રે જમીને",
@@ -210,6 +211,60 @@ export default function PatientRegistration() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const translateToGujarati = async (text: string) => {
+    if (!text.trim()) return ""
+
+    setIsTranslating(true)
+    try {
+      // Using Google Translate API via a proxy service
+      const response = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|gu`,
+      )
+      const data = await response.json()
+
+      if (data.responseStatus === 200 && data.responseData) {
+        return data.responseData.translatedText
+      } else {
+        // Fallback: Simple transliteration mapping for common medical terms
+        const commonTranslations: { [key: string]: string } = {
+          morning: "સવારે",
+          evening: "સાંજે",
+          night: "રાત્રે",
+          "before food": "ભૂખ્યા પેટે",
+          "after food": "જમીને",
+          tablet: "ગોળી",
+          capsule: "કેપ્સ્યુલ",
+          syrup: "સીરપ",
+          drops: "ટીપાં",
+          times: "વાર",
+          daily: "દરરોજ",
+          twice: "બે વાર",
+          thrice: "ત્રણ વાર",
+          "as needed": "જરૂર પડે તો",
+        }
+
+        let translatedText = text.toLowerCase()
+        Object.entries(commonTranslations).forEach(([english, gujarati]) => {
+          translatedText = translatedText.replace(new RegExp(english, "gi"), gujarati)
+        })
+
+        return translatedText
+      }
+    } catch (error) {
+      console.error("Translation error:", error)
+      return text // Return original text if translation fails
+    } finally {
+      setIsTranslating(false)
+    }
+  }
+
+  const handleTranslateCustomDose = async () => {
+    if (customDose.trim()) {
+      const translated = await translateToGujarati(customDose)
+      setCustomDose(translated)
+    }
   }
 
   return (
@@ -516,13 +571,40 @@ export default function PatientRegistration() {
                         {currentMedication.dose === "CUSTOM" && (
                           <div className="mt-4">
                             <Label htmlFor="customDose">Enter Custom Dose</Label>
-                            <Input
-                              id="customDose"
-                              value={customDose}
-                              onChange={(e) => setCustomDose(e.target.value)}
-                              placeholder="Enter custom dose instructions"
-                              className="mt-2"
-                            />
+                            <div className="flex gap-2 mt-2">
+                              <Input
+                                id="customDose"
+                                value={customDose}
+                                onChange={(e) => setCustomDose(e.target.value)}
+                                placeholder="Enter custom dose instructions in English"
+                                className="flex-1"
+                              />
+                              <Button
+                                type="button"
+                                onClick={handleTranslateCustomDose}
+                                disabled={isTranslating || !customDose.trim()}
+                                variant="outline"
+                                size="sm"
+                                className="px-3 bg-transparent"
+                              >
+                                {isTranslating ? (
+                                  <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+                                ) : (
+                                  <Languages className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              For Accurate Results go to This Website{" "}
+                              <a
+                                href="https://www.easygujaratityping.com/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                              >
+                                https://www.easygujaratityping.com/
+                              </a>
+                            </p>
                           </div>
                         )}
                       </div>
