@@ -4,7 +4,21 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Stethoscope, Users, Calendar, Home, UserPlus, User, LogOut, Moon, Sun, Pill, Menu, X } from "lucide-react"
+import {
+  Stethoscope,
+  Users,
+  Calendar,
+  Home,
+  UserPlus,
+  User,
+  LogOut,
+  Moon,
+  Sun,
+  Pill,
+  Menu,
+  X,
+  UserCheck,
+} from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
@@ -13,6 +27,7 @@ const navigation = [
   { name: "Home", href: "/", icon: Home },
   { name: "Patients", href: "/patients", icon: Users },
   { name: "Appointments", href: "/appointments", icon: Calendar },
+  { name: "Visits", href: "/visits", icon: UserCheck },
   { name: "Prescriptions", href: "/prescriptions", icon: Pill },
 ]
 
@@ -42,7 +57,7 @@ export function Navigation() {
     setUser(null)
     router.push("/login")
   }
-  
+
   // Close mobile menu when route changes
   useEffect(() => {
     setMobileMenuOpen(false)
@@ -69,9 +84,9 @@ export function Navigation() {
                     asChild
                     className={cn(
                       "flex items-center justify-center space-x-2 transition-all duration-200 px-4 py-2",
-                      pathname === item.href 
-                        ? "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-lg" 
-                        : "hover:bg-gray-100 dark:hover:bg-slate-800 dark:text-slate-300 dark:hover:text-slate-100"
+                      pathname === item.href
+                        ? "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-lg"
+                        : "hover:bg-gray-100 dark:hover:bg-slate-800 dark:text-slate-300 dark:hover:text-slate-100",
                     )}
                   >
                     <Link href={item.href}>
@@ -120,19 +135,31 @@ export function Navigation() {
                     {user.role}
                   </span>
                 </div>
-                <Button variant="outline" asChild className="hidden sm:flex border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200 h-9 px-3">
+                <Button
+                  variant="outline"
+                  asChild
+                  className="hidden sm:flex border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200 h-9 px-3 bg-transparent"
+                >
                   <Link href="/profile">
                     <User className="h-4 w-4 mr-2" />
                     Profile
                   </Link>
                 </Button>
-                <Button variant="outline" onClick={handleLogout} className="hidden sm:flex bg-transparent border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200 h-9 px-3">
+                <Button
+                  variant="outline"
+                  onClick={handleLogout}
+                  className="hidden sm:flex bg-transparent border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200 h-9 px-3"
+                >
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
                 </Button>
               </>
             ) : (
-              <Button asChild size="sm" className="hidden sm:flex px-3 sm:px-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-lg transition-all duration-200 h-9">
+              <Button
+                asChild
+                size="sm"
+                className="hidden sm:flex px-3 sm:px-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-lg transition-all duration-200 h-9"
+              >
                 <Link href="/patients/register">
                   <UserPlus className="h-4 w-4" />
                   <span className="hidden md:inline ml-2">Register Patient</span>
@@ -142,21 +169,21 @@ export function Navigation() {
             )}
           </div>
         </div>
-        
+
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 px-2 space-y-3 border-t border-gray-200 dark:border-slate-700/50 animate-in slide-in-from-top duration-300">
             {navigation.map((item) => {
               const Icon = item.icon
               return (
-                <Link 
-                  key={item.name} 
+                <Link
+                  key={item.name}
                   href={item.href}
                   className={cn(
                     "flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200",
-                    pathname === item.href 
-                      ? "bg-blue-600 text-white" 
-                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    pathname === item.href
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700",
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -164,7 +191,7 @@ export function Navigation() {
                 </Link>
               )
             })}
-            
+
             {user && (
               <>
                 <div className="flex items-center space-x-2 px-4 py-2 text-sm">
@@ -174,14 +201,14 @@ export function Navigation() {
                     {user.role}
                   </span>
                 </div>
-                <Link 
+                <Link
                   href="/profile"
                   className="flex items-center space-x-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg"
                 >
                   <User className="h-5 w-5" />
                   <span className="font-medium">Profile</span>
                 </Link>
-                <button 
+                <button
                   onClick={handleLogout}
                   className="w-full flex items-center space-x-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg"
                 >
@@ -190,9 +217,9 @@ export function Navigation() {
                 </button>
               </>
             )}
-            
+
             {!user && (
-              <Link 
+              <Link
                 href="/patients/register"
                 className="flex items-center space-x-3 px-4 py-3 bg-blue-600 text-white rounded-lg"
               >

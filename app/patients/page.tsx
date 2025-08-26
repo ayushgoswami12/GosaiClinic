@@ -302,6 +302,16 @@ export default function PatientsPage() {
     setShowMedicationModal(true)
   }
 
+  const getVisitCountForPatient = (patientId: string): number => {
+    const storedVisits = localStorage.getItem("visits")
+    if (storedVisits) {
+      const visits = JSON.parse(storedVisits)
+      const count = visits.filter((visit: any) => visit.patientId === patientId).length
+      return count + 1
+    }
+    return 1
+  }
+
   const getMedicationsForPatient = (patientId: string): Prescription[] => {
     const storedPrescriptions = localStorage.getItem("prescriptions")
     if (storedPrescriptions) {
@@ -912,6 +922,8 @@ export default function PatientsPage() {
                 ) : (
                   <div className="space-y-4">
                     {filteredPatients.map((patient) => {
+                      const visitCount = getVisitCountForPatient(patient.id)
+
                       return (
                         <div
                           key={patient.id}
@@ -934,6 +946,9 @@ export default function PatientsPage() {
                                   </span>
                                   <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 text-xs">
                                     ID: {patient.id}
+                                  </Badge>
+                                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300 text-xs">
+                                    {visitCount} {visitCount === 1 ? "Visit" : "Visits"}
                                   </Badge>
                                 </div>
                               </div>

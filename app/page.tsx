@@ -9,7 +9,6 @@ import {
   Home,
   Users,
   Calendar,
-  FileText,
   CalendarDays,
   UserPlus,
   Bed,
@@ -20,6 +19,7 @@ import {
   Moon,
   Menu,
   X,
+  UserCheck,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
@@ -221,6 +221,15 @@ export default function HomePage() {
             <span>Appointments</span>
           </Link>
 
+          <Link
+            href="/visits"
+            className="flex items-center space-x-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <UserCheck className="w-5 h-5" />
+            <span>Patient Visits</span>
+          </Link>
+
           {/* <Link
             href="/records"
             className="flex items-center space-x-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg"
@@ -245,7 +254,14 @@ export default function HomePage() {
               <span>Register New Patient</span>
             </Link>
 
-            {/* CSV export feature removed */}
+            <Link
+              href="/visits"
+              className="flex items-center space-x-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 rounded-lg transition-colors"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <UserCheck className="w-5 h-5" />
+              <span>Record Patient Visit</span>
+            </Link>
 
             <Link
               href="/appointments/book"
