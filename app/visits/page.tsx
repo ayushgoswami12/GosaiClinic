@@ -284,6 +284,37 @@ export default function VisitsPage() {
       setVisits(updatedVisits)
       localStorage.setItem("visits", JSON.stringify(updatedVisits))
 
+      if (visitForm.followUpDate) {
+        const newAppointment = {
+          id: `APT-${Date.now()}`,
+          patient: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
+          doctor: visitForm.doctorName,
+          date: visitForm.followUpDate,
+          time: "10:00", // Default follow-up time
+          duration: 30,
+          type: "Follow-up",
+          status: "confirmed",
+          department: getDepartmentByDoctor(visitForm.doctorName),
+          phone: selectedPatient.phone,
+          patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
+          patientPhone: selectedPatient.phone,
+          patientEmail: "",
+          appointmentType: "Follow-up",
+          notes: `Auto-generated from visit ${newVisit.id} - Follow-up for: ${visitForm.diagnosis}`,
+          createdAt: new Date().toISOString(),
+          patientId: selectedPatient.id,
+          lastUpdated: new Date().toISOString(),
+        }
+
+        // Get existing appointments and add the new one
+        const existingAppointments = JSON.parse(localStorage.getItem("appointments") || "[]")
+        const updatedAppointments = [...existingAppointments, newAppointment]
+        localStorage.setItem("appointments", JSON.stringify(updatedAppointments))
+
+        // Dispatch event to notify appointment system
+        window.dispatchEvent(new CustomEvent("appointmentAdded"))
+      }
+
       if (showPrescription && medicationTable.length > 0) {
         const prescription = {
           id: newVisit.prescriptionId,
@@ -328,16 +359,29 @@ export default function VisitsPage() {
       setCurrentMedication({ name: "", dose: "", qty: "" })
       setCustomDose("")
 
-      const message =
-        showPrescription && medicationTable.length > 0
-          ? `Visit recorded successfully for ${newVisit.patientName} with prescription!`
-          : `Visit recorded successfully for ${newVisit.patientName}!`
+      let message = `Visit recorded successfully for ${newVisit.patientName}`
+      if (showPrescription && medicationTable.length > 0) {
+        message += " with prescription"
+      }
+      if (visitForm.followUpDate) {
+        message += ` and follow-up appointment scheduled for ${formatDate(visitForm.followUpDate)}`
+      }
+      message += "!"
 
       alert(message)
     } catch (error) {
       console.error("Error saving visit:", error)
       alert("Error saving visit. Please try again.")
     }
+  }
+
+  const getDepartmentByDoctor = (doctorName: string) => {
+    const doctorDepartments: { [key: string]: string } = {
+      "Dr. Tansukh Gosai": "General Physician",
+      "Dr. Devang Gosai": "Ano Rectal Expert",
+      "Dr. Dhara Gosai": "Dental Surgeon",
+    }
+    return doctorDepartments[doctorName] || "General Physician"
   }
 
   const getStatusBadge = (status: string) => {
