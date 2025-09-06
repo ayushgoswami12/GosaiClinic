@@ -40,6 +40,7 @@ interface Patient {
   registrationDate: string
   visits?: number
   visitRecords?: VisitRecord[]
+  profileImage?: string
 }
 
 interface VisitRecord {
@@ -178,35 +179,23 @@ export default function FullScreenVisitPage() {
     try {
       console.log("[v0] Starting translation for:", text)
 
-      const response = await fetch("https://google-translate1.p.rapidapi.com/language/translate/v2", {
+      const response = await fetch("/api/translate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "Accept-Encoding": "application/gzip",
-          "X-RapidAPI-Key": process.env.NEXT_PUBLIC_RAPIDAPI_KEY || "your-rapidapi-key-here",
-          "X-RapidAPI-Host": "google-translate1.p.rapidapi.com",
-        },
-        body: new URLSearchParams({
-          q: text,
-          target: "gu",
-          source: "en",
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, source: "en", target: "gu" }),
       })
 
       const data = await response.json()
-      console.log("[v0] Translation response:", data)
 
-      if (data.data && data.data.translations && data.data.translations[0]) {
-        const translatedText = data.data.translations[0].translatedText
+      if (response.ok && data?.translatedText !== undefined) {
+        const translatedText = data.translatedText as string
         console.log("[v0] Translation successful:", translatedText)
         return translatedText
       } else {
-        throw new Error("Invalid response format")
+        throw new Error(data?.error || "Invalid response format")
       }
     } catch (error) {
-      console.error("[v0] Translation error:", error)
-
-      console.log("[v0] Using fallback transliteration")
+      console.error("[v0] Translation error (fallback to transliteration):", error)
 
       const transliterationMap: { [key: string]: string } = {
         a: "અ",
@@ -290,13 +279,11 @@ export default function FullScreenVisitPage() {
 
       let result = text.toLowerCase()
       const sortedKeys = Object.keys(transliterationMap).sort((a, b) => b.length - a.length)
-
       for (const english of sortedKeys) {
         const gujarati = transliterationMap[english]
         const regex = new RegExp(`\\b${english}\\b`, "gi")
         result = result.replace(regex, gujarati)
       }
-
       if (result === text.toLowerCase()) {
         result = text
           .toLowerCase()
@@ -304,7 +291,6 @@ export default function FullScreenVisitPage() {
           .map((char) => transliterationMap[char] || char)
           .join("")
       }
-
       console.log("[v0] Fallback transliteration result:", result)
       return result
     } finally {
@@ -616,6 +602,16 @@ export default function FullScreenVisitPage() {
                   <Label className="text-sm font-medium text-gray-500">Previous Visits</Label>
                   <p className="font-medium">{patient.visits || 1}</p>
                 </div>
+                {patient.profileImage && (
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Profile Image</Label>
+                    <img
+                      src={patient.profileImage || "/placeholder.svg"}
+                      alt="Profile"
+                      className="w-20 h-20 rounded-full"
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

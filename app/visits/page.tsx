@@ -68,6 +68,7 @@ interface Visit {
   medications?: MedicationEntry[]
   investigation?: string
   prescriptionNotes?: string
+  profileImage?: string
 }
 
 export default function VisitsPage() {
@@ -94,6 +95,46 @@ export default function VisitsPage() {
   const [customDose, setCustomDose] = useState("")
   const [isTranslating, setIsTranslating] = useState(false)
 
+  // Keep close to other useState hooks
+  const [isDraggingImage, setIsDraggingImage] = useState(false)
+
+  async function fileToDataUrlCompressed(file: File, maxDim = 1600): Promise<string> {
+    // Compress large images for print while keeping quality
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image()
+      i.onload = () => resolve(i)
+      i.onerror = reject
+      i.crossOrigin = "anonymous"
+      const fr = new FileReader()
+      fr.onload = () => {
+        i.src = String(fr.result)
+      }
+      fr.readAsDataURL(file)
+    })
+
+    const { width, height } = img
+    const scale = Math.min(1, maxDim / Math.max(width, height))
+    const canvas = document.createElement("canvas")
+    canvas.width = Math.round(width * scale)
+    canvas.height = Math.round(height * scale)
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return ""
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    // Use jpeg for smaller size; quality 0.9 for print
+    return canvas.toDataURL("image/jpeg", 0.9)
+  }
+
+  async function handleVisitImageFiles(files: FileList | null) {
+    const file = files?.[0]
+    if (!file) return
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.")
+      return
+    }
+    const dataUrl = await fileToDataUrlCompressed(file)
+    setVisitForm((prev) => ({ ...prev, profileImage: dataUrl }))
+  }
+
   const [visitForm, setVisitForm] = useState({
     visitDate: new Date().toISOString().split("T")[0],
     visitTime: new Date().toTimeString().slice(0, 5),
@@ -106,6 +147,7 @@ export default function VisitsPage() {
     fee: "",
     status: "in-progress" as const,
     notes: "",
+    profileImage: "",
   })
 
   const doctors = ["Dr. Tansukh Gosai", "Dr. Devang Gosai", "Dr. Dhara Gosai"]
@@ -349,6 +391,7 @@ export default function VisitsPage() {
         fee: "",
         status: "in-progress",
         notes: "",
+        profileImage: "",
       })
       setSelectedPatient(null)
       setShowNewVisitForm(false)
@@ -428,477 +471,206 @@ export default function VisitsPage() {
   const generatePrintHTML = () => {
     if (!selectedVisitForPrint) return ""
 
-    // Get patient details
     const patient = patients.find((p) => p.id === selectedVisitForPrint.patientId)
 
     return `
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Visit Report - ${selectedVisitForPrint.patientName}</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            font-size: 10pt;
-            line-height: 1.4;
-            color: #333;
-            background: white;
-            padding: 15px;
-            max-width: 210mm;
-            margin: 0 auto;
-        }
-        
-        .clinic-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 15px;
-            border-bottom: 2px solid #3b82f6;
-            margin-bottom: 15px;
-            background-color: #f8fafc;
-            border-radius: 6px 6px 0 0;
-        }
-        
-        .clinic-branding {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .clinic-title {
-            font-size: 20pt;
-            font-weight: bold;
-            color: #1e40af;
-            line-height: 1.1;
-            letter-spacing: -0.5px;
-        }
-        
-        .clinic-subtitle {
-            font-size: 10pt;
-            color: #6b7280;
-            font-style: italic;
-            margin-top: 2px;
-        }
-        
-        .clinic-contact {
-            font-size: 8pt;
-            color: #6b7280;
-            text-align: right;
-        }
-        
-        .visit-card {
-            display: flex;
-            justify-content: space-between;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        
-        .visit-primary-info {
-            flex: 1;
-        }
-        
-        .patient-name {
-            font-size: 14pt;
-            font-weight: bold;
-            color: #1e40af;
-            margin-bottom: 4px;
-            letter-spacing: -0.3px;
-        }
-        
-        .visit-id {
-            font-size: 9pt;
-            color: #6b7280;
-            margin-bottom: 8px;
-        }
-        
-        .visit-details {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-            font-size: 8pt;
-        }
-        
-        .detail-item {
-            display: flex;
-            align-items: baseline;
-        }
-        
-        .detail-label {
-            font-weight: bold;
-            color: #6b7280;
-            margin-right: 4px;
-        }
-        
-        .detail-value {
-            color: #1f2937;
-        }
-        
-        .section-title {
-            font-size: 12pt;
-            font-weight: bold;
-            color: #1f2937;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 2px solid #e5e7eb;
-            letter-spacing: -0.3px;
-        }
-        
-        .visit-info-section {
-            margin-top: 10px;
-            padding: 15px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            font-size: 9pt;
-        }
-        
-        .info-item {
-            padding: 8px;
-            background: white;
-            border-radius: 4px;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .info-label {
-            font-weight: bold;
-            color: #1e40af;
-            margin-bottom: 4px;
-        }
-        
-        .info-content {
-            color: #1f2937;
-        }
-        
-        .medications-section {
-            margin-top: 10px;
-        }
-        
-        .medication-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 9pt;
-            margin-bottom: 15px;
-            border-radius: 6px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        
-        .medication-table th {
-            background: #f1f5f9;
-            color: #1e40af;
-            font-weight: bold;
-            text-align: left;
-            padding: 8px 10px;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .medication-table td {
-            padding: 8px 10px;
-            border: 1px solid #e2e8f0;
-            vertical-align: top;
-        }
-        
-        .medication-table tr:nth-child(even) {
-            background: #f8fafc;
-        }
-        
-        .medication-name {
-            font-weight: bold;
-            color: #1f2937;
-            font-size: 10pt;
-        }
-        
-        .medication-dose {
-            color: #059669;
-            font-size: 9pt;
-            font-weight: 500;
-        }
-        
-        .medication-qty {
-            color: #dc2626;
-            font-size: 9pt;
-            text-align: center;
-            font-weight: 500;
-        }
-        
-        .no-medications {
-            text-align: center;
-            padding: 30px;
-            color: #6b7280;
-            font-style: italic;
-            font-size: 10pt;
-            background-color: #f9fafb;
-            border-radius: 4px;
-            margin: 10px 0;
-        }
-        
-        .diagnosis-section {
-            font-size: 9pt;
-            padding: 10px 15px;
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            border-radius: 6px;
-            margin-bottom: 12px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        
-        .diagnosis-title {
-            font-weight: bold;
-            color: #92400e;
-            display: inline;
-            margin-right: 8px;
-            font-size: 9pt;
-        }
-        
-        .diagnosis-content {
-            color: #78350f;
-            display: inline;
-            font-size: 9pt;
-        }
-        
-        .fee-section {
-            text-align: right;
-            font-weight: bold;
-            font-size: 11pt;
-            margin-top: 10px;
-            padding: 8px 10px;
-            border-top: 2px solid #e2e8f0;
-            color: #1e40af;
-        }
-        
-        .page-footer {
-            margin-top: 20px;
-            text-align: center;
-            font-size: 8pt;
-            color: #9ca3af;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 10px;
-        }
-        
-        .print-date {
-            font-size: 8pt;
-            color: #6b7280;
-            text-align: right;
-            margin-bottom: 10px;
-            font-style: italic;
-        }
-        
-        @media print {
-            body { 
-                margin: 0; 
-                padding: 10px; 
-            }
-            * {
-                -webkit-print-color-adjust: exact !important;
-                color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            table { page-break-inside: avoid; }
-            tr { page-break-inside: avoid; }
-            .clinic-header { box-shadow: none; }
-            .visit-card { box-shadow: none; }
-            .medication-table { box-shadow: none; }
-            .diagnosis-section { box-shadow: none; }
-            .visit-info-section { box-shadow: none; }
-        }
-    </style>
+  <title>Visit Report - ${selectedVisitForPrint.patientName}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Arial',sans-serif;font-size:10pt;line-height:1.4;color:#333;background:white;padding:15px;max-width:210mm;margin:0 auto;}
+    .clinic-header{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;border-bottom:2px solid #3b82f6;margin-bottom:15px;background:#f8fafc;border-radius:6px 6px 0 0;}
+    .clinic-branding{display:flex;flex-direction:column;}
+    .clinic-title{font-size:20pt;font-weight:bold;color:#1e40af;line-height:1.1;letter-spacing:-0.5px;}
+    .clinic-subtitle{font-size:10pt;color:#6b7280;font-style:italic;margin-top:2px;}
+    .clinic-contact{font-size:8pt;color:#6b7280;text-align:right;}
+    .visit-card{display:flex;justify-content:space-between;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:15px;margin-bottom:15px;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+    .visit-primary-info{flex:1;}
+    .patient-name{font-size:14pt;font-weight:bold;color:#1e40af;margin-bottom:4px;letter-spacing:-0.3px;}
+    .visit-id{font-size:9pt;color:#6b7280;margin-bottom:8px;}
+    .visit-details{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;font-size:8pt;}
+    .detail-item{display:flex;align-items:baseline;}
+    .detail-label{font-weight:bold;color:#6b7280;margin-right:4px;}
+    .detail-value{color:#1f2937;}
+    .section-title{font-size:12pt;font-weight:bold;color:#1f2937;margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;letter-spacing:-0.3px;}
+    .visit-info-section{margin-top:10px;padding:15px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:15px;}
+    .info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;font-size:9pt;}
+    .info-item{padding:8px;background:white;border-radius:4px;border:1px solid #e2e8f0;}
+    .info-label{font-weight:bold;color:#1e40af;margin-bottom:4px;}
+    .info-content{color:#1f2937;}
+    .attached-image-section{margin:12px 0 16px 0;page-break-inside:avoid;}
+    .attached-image-title{font-size:12pt;font-weight:bold;color:#1f2937;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;letter-spacing:-0.3px;}
+    .attached-image-box{width:100%;height:340px;border:1px dashed #94a3b8;background:#ffffff;display:flex;align-items:center;justify-content:center;padding:8px;border-radius:6px;}
+    .attached-image-box img{max-width:100%;max-height:100%;object-fit:contain;image-rendering:auto;}
+    .page-break{page-break-before:always;}
+    .fee-section{text-align:right;font-weight:bold;font-size:11pt;margin-top:10px;padding:8px 10px;border-top:2px solid #e2e8f0;color:#1e40af;}
+    .page-footer{margin-top:20px;text-align:center;font-size:8pt;color:#9ca3af;border-top:1px solid #e2e8f0;padding-top:10px;}
+    .print-date{font-size:8pt;color:#6b7280;text-align:right;margin-bottom:10px;font-style:italic;}
+    .diagnosis-section{font-size:9pt;padding:10px 15px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,0.05);}
+    .diagnosis-title{font-weight:bold;color:#92400e;display:inline;margin-right:8px;font-size:9pt;}
+    .diagnosis-content{color:#78350f;display:inline;font-size:9pt;}
+    .medications-section{margin-top:10px;}
+    .medication-table{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:15px;border-radius:6px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+    .medication-table th{background:#f1f5f9;color:#1e40af;font-weight:bold;text-align:left;padding:8px 10px;border:1px solid #e2e8f0;}
+    .medication-table td{padding:8px 10px;border:1px solid #e2e8f0;vertical-align:top;}
+    .medication-table tr:nth-child(even){background:#f8fafc;}
+    .medication-name{font-weight:bold;color:#1f2937;font-size:10pt;}
+    .medication-dose{color:#059669;font-size:9pt;font-weight:500;}
+    .medication-qty{color:#dc2626;font-size:9pt;text-align:center;font-weight:500;}
+    .no-medications{text-align:center;padding:30px;color:#6b7280;font-style:italic;font-size:10pt;background:#f9fafb;border-radius:4px;margin:10px 0;}
+    @media print{
+      body{margin:0;padding:10px;}
+      *{-webkit-print-color-adjust:exact !important;color-adjust:exact !important;print-color-adjust:exact !important;}
+      img{image-rendering:auto;}
+      /* Allow tables to break across pages for 8+ medications */
+      table{page-break-inside:auto;}
+      tr{page-break-inside:avoid; page-break-after:auto;}
+      thead{display:table-header-group;}
+      tbody{display:table-row-group;}
+      .clinic-header,.visit-card,.diagnosis-section,.visit-info-section,.attached-image-section{box-shadow:none;}
+      .patient-photo,.visit-thumbnail,img[width="40"],img[height="40"]{display:none !important;}
+      .attached-image-box{height:160mm;page-break-inside:avoid;}
+    }
+  </style>
 </head>
 <body>
-    <div class="clinic-header">
-        <div class="clinic-branding">
-            <div class="clinic-title">GOSAI CLINIC</div>
-            <div class="clinic-subtitle">Complete Healthcare Solutions</div>
-        </div>
-        <div class="clinic-contact">
-            <div>📍 Opp. Taluka Panchayat, Shiv Nagar, Bhanvad, Gujarat 360510</div>
-            <div>📞 9426953220</div>
-        </div>
+  <div class="clinic-header">
+    <div class="clinic-branding">
+      <div class="clinic-title">GOSAI CLINIC</div>
+      <div class="clinic-subtitle">Complete Healthcare Solutions</div>
     </div>
-    
-    <div class="print-date">
-        Generated: ${new Date().toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })} ${new Date().toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
+    <div class="clinic-contact">
+      <div>📍 Opp. Taluka Panchayat, Shiv Nagar, Bhanvad, Gujarat 360510</div>
+      <div>📞 9426953220</div>
     </div>
-    
-    <div class="visit-card">
-        <div class="visit-primary-info">
-            <div class="patient-name">${selectedVisitForPrint.patientName}</div>
-            <div class="visit-id">Visit ID: ${selectedVisitForPrint.id}</div>
-            
-            <div class="visit-details">
-                <div class="detail-item">
-                    <span class="detail-label">Visit Date:</span>
-                    <span class="detail-value">${formatDate(selectedVisitForPrint.visitDate)}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Time:</span>
-                    <span class="detail-value">${selectedVisitForPrint.visitTime}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Type:</span>
-                    <span class="detail-value">${selectedVisitForPrint.visitType}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Doctor:</span>
-                    <span class="detail-value">Dr. ${selectedVisitForPrint.doctorName}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Status:</span>
-                    <span class="detail-value">${selectedVisitForPrint.status}</span>
-                </div>
-                ${
-                  patient
-                    ? `
-                <div class="detail-item">
-                    <span class="detail-label">Age:</span>
-                    <span class="detail-value">${patient.age} years</span>
-                </div>
-                `
-                    : ""
-                }
-            </div>
-        </div>
+  </div>
+
+  <div class="print-date">
+    Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+    ${new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+  </div>
+
+  <!-- Visit Information -->
+  <div class="visit-card">
+    <div class="visit-primary-info">
+      <div class="patient-name">${selectedVisitForPrint.patientName}</div>
+      <div class="visit-id">Visit ID: ${selectedVisitForPrint.id}</div>
+      <div class="visit-details">
+        <div class="detail-item"><span class="detail-label">Visit Date:</span><span class="detail-value">${formatDate(selectedVisitForPrint.visitDate)}</span></div>
+        <div class="detail-item"><span class="detail-label">Time:</span><span class="detail-value">${selectedVisitForPrint.visitTime}</span></div>
+        <div class="detail-item"><span class="detail-label">Type:</span><span class="detail-value">${selectedVisitForPrint.visitType}</span></div>
+        <div class="detail-item"><span class="detail-label">Doctor:</span><span class="detail-value">Dr. ${selectedVisitForPrint.doctorName}</span></div>
+        <div class="detail-item"><span class="detail-label">Status:</span><span class="detail-value">${selectedVisitForPrint.status}</span></div>
+        ${patient ? `<div class="detail-item"><span class="detail-label">Age:</span><span class="detail-value">${patient.age} years</span></div>` : ""}
+      </div>
     </div>
-    
-    <div class="visit-info-section">
-        <div class="section-title">Visit Information</div>
-        <div class="info-grid">
-            <div class="info-item">
-                <div class="info-label">Diagnosis</div>
-                <div class="info-content">${selectedVisitForPrint.diagnosis || "Not specified"}</div>
-            </div>
-            ${
-              selectedVisitForPrint.followUpDate
-                ? `
-            <div class="info-item">
-                <div class="info-label">Follow-up Date</div>
-                <div class="info-content">${formatDate(selectedVisitForPrint.followUpDate)}</div>
-            </div>
-            `
-                : ""
-            }
-        </div>
-        
-        ${
-          selectedVisitForPrint.investigation
-            ? `
-        <div class="diagnosis-section" style="background: #f0fdf4; border-color: #22c55e;">
-            <span class="diagnosis-title" style="color: #15803d;">Investigation:</span>
-            <span class="diagnosis-content" style="color: #166534;">${selectedVisitForPrint.investigation}</span>
-        </div>
-        `
-            : ""
-        }
+  </div>
+
+  <div class="visit-info-section">
+    <div class="section-title">Visit Information</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Diagnosis</div>
+        <div class="info-content">${selectedVisitForPrint.diagnosis || "Not specified"}</div>
+      </div>
+      ${
+        selectedVisitForPrint.followUpDate
+          ? `
+      <div class="info-item">
+        <div class="info-label">Follow-up Date</div>
+        <div class="info-content">${formatDate(selectedVisitForPrint.followUpDate)}</div>
+      </div>`
+          : ""
+      }
     </div>
-    
-    <div class="medications-section">
-        <div class="section-title">Prescribed Medications</div>
-        
-        ${
-          selectedVisitForPrint.medications && selectedVisitForPrint.medications.length > 0
-            ? `
-        <table class="medication-table">
-            <thead>
-                <tr>
-                    <th style="width: 8%;">No</th>
-                    <th style="width: 50%;">Medicine</th>
-                    <th style="width: 32%;">Dosage</th>
-                    <th style="width: 10%;">Qty</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${selectedVisitForPrint.medications
-                  .map(
-                    (medication, index) => `
-                    <tr>
-                        <td style="text-align: center;">${index + 1}</td>
-                        <td>
-                            <div class="medication-name">${medication.name}</div>
-                        </td>
-                        <td>
-                            <div class="medication-dose">${medication.dose || "As directed"}</div>
-                        </td>
-                        <td>
-                            <div class="medication-qty">${medication.qty || "As needed"}</div>
-                        </td>
-                    </tr>
-                `,
-                  )
-                  .join("")}
-            </tbody>
-        </table>
-        `
-            : `
-        <div class="no-medications">
-            <div>No medications prescribed for this visit</div>
-            <div style="font-size: 9pt; margin-top: 5px; color: #9ca3af;">Please consult with the doctor for medical advice</div>
-        </div>
-        `
-        }
-        
-        ${
-          selectedVisitForPrint.prescriptionNotes
-            ? `
-        <div class="diagnosis-section" style="background: #f3f4f6; border-color: #6b7280;">
-            <span class="diagnosis-title" style="color: #374151;">Prescription Notes:</span>
-            <span class="diagnosis-content" style="color: #4b5563;">${selectedVisitForPrint.prescriptionNotes}</span>
-        </div>
-        `
-            : ""
-        }
-    </div>
-    
     ${
-      selectedVisitForPrint.fee
+      selectedVisitForPrint.investigation
         ? `
+      <div class="diagnosis-section" style="background:#f0fdf4;border-color:#22c55e;">
+        <span class="diagnosis-title" style="color:#15803d;">Investigation:</span>
+        <span class="diagnosis-content" style="color:#166534;">${selectedVisitForPrint.investigation}</span>
+      </div>`
+        : ""
+    }
+  </div>
+
+  <!-- Added prescribed medications section -->
+  ${
+    selectedVisitForPrint.medications && selectedVisitForPrint.medications.length > 0
+      ? `
+  <div class="medications-section">
+    <div class="section-title">Prescribed Medications</div>
+    <table class="medication-table">
+      <thead>
+        <tr>
+          <th style="width:8%;">No</th>
+          <th style="width:50%;">Medicine</th>
+          <th style="width:32%;">Dosage</th>
+          <th style="width:10%;">Qty</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${selectedVisitForPrint.medications
+          .map(
+            (medication, idx) => `
+          <tr>
+            <td style="text-align:center;">${idx + 1}</td>
+            <td><div class="medication-name">${medication.name || ""}</div></td>
+            <td><div class="medication-dose">${medication.dose || "As directed"}</div></td>
+            <td><div class="medication-qty">${medication.qty || "As needed"}</div></td>
+          </tr>
+        `,
+          )
+          .join("")}
+      </tbody>
+    </table>
+  </div>`
+      : ""
+  }
+
+  ${
+    selectedVisitForPrint.fee
+      ? `
     <div class="fee-section">
-        <span class="diagnosis-title" style="color: #92400e;">Consultation Fee:</span>
-        <span class="diagnosis-content" style="color: #92400e; font-weight: 600;">₹${selectedVisitForPrint.fee}</span>
+      <span class="diagnosis-title" style="color:#92400e;">Consultation Fee:</span>
+      <span class="diagnosis-content" style="color:#92400e;font-weight:600;">₹${selectedVisitForPrint.fee}</span>
+    </div>`
+      : ""
+  }
+
+  ${
+    selectedVisitForPrint.notes
+      ? `
+    <div class="diagnosis-section" style="background:#f3f4f6;border-color:#6b7280;margin-top:15px;">
+      <span class="diagnosis-title" style="color:#374151;">Visit Notes:</span>
+      <span class="diagnosis-content" style="color:#4b5563;">${selectedVisitForPrint.notes}</span>
+    </div>`
+      : ""
+  }
+
+  <!-- Updated image section to match working patient print format -->
+  ${
+    selectedVisitForPrint.image || selectedVisitForPrint.profileImage
+      ? `
+  <div class="page-break"></div>
+  <div class="attached-image-section">
+    <div class="attached-image-title">Attached Image</div>
+    <div class="attached-image-box">
+      <img src="${selectedVisitForPrint.image || selectedVisitForPrint.profileImage}" alt="Attached medical image" />
     </div>
-    `
-        : ""
-    }
-    
-    ${
-      selectedVisitForPrint.notes
-        ? `
-    <div class="diagnosis-section" style="background: #f3f4f6; border-color: #6b7280; margin-top: 15px;">
-        <span class="diagnosis-title" style="color: #374151;">Visit Notes:</span>
-        <span class="diagnosis-content" style="color: #4b5563;">${selectedVisitForPrint.notes}</span>
-    </div>
-    `
-        : ""
-    }
-    
-    <div class="page-footer">
-        <div><strong>GOSAI CLINIC</strong> - Your Trusted Healthcare Partner</div>
-        <div style="font-size: 8pt;">This is a computer-generated report. For queries, contact: 9426953220</div>
-        <div style="font-size: 8pt;">Report ID: ${selectedVisitForPrint.id}-${Date.now()}</div>
-    </div>
+  </div>`
+      : ""
+  }
+
+  <div class="page-footer">
+    <div>GOSAI CLINIC - Complete Healthcare Solutions</div>
+    <div>This is a computer-generated document. No signature required.</div>
+  </div>
 </body>
-</html>`
+</html>
+    `
   }
 
   return (
@@ -1172,6 +944,79 @@ export default function VisitsPage() {
                             value={visitForm.notes}
                             onChange={(e) => setVisitForm((prev) => ({ ...prev, notes: e.target.value }))}
                           />
+                        </div>
+                        <div className="space-y-4">
+                          {/* Image Attachment (optional) */}
+                          <div>
+                            <Label>Attach Image (optional)</Label>
+                            <div
+                              onDragOver={(e) => {
+                                e.preventDefault()
+                                setIsDraggingImage(true)
+                              }}
+                              onDragLeave={() => setIsDraggingImage(false)}
+                              onDrop={async (e) => {
+                                e.preventDefault()
+                                setIsDraggingImage(false)
+                                await handleVisitImageFiles(e.dataTransfer.files)
+                              }}
+                              className={`mt-2 rounded-lg border-2 border-dashed ${
+                                isDraggingImage ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30" : "border-gray-300"
+                              } p-4 text-center cursor-pointer`}
+                              onClick={() => document.getElementById("visit-image-input")?.click()}
+                              role="button"
+                              aria-label="Upload image from your computer"
+                            >
+                              {visitForm.profileImage ? (
+                                <div className="space-y-2">
+                                  <img
+                                    src={visitForm.profileImage || "/placeholder.svg"}
+                                    alt="Selected attachment preview"
+                                    className="mx-auto max-h-60 rounded-md object-contain"
+                                  />
+                                  <div className="flex items-center justify-center gap-3">
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      onClick={() => document.getElementById("visit-image-input")?.click()}
+                                    >
+                                      Replace image
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      onClick={() => setVisitForm((p) => ({ ...p, profileImage: "" }))}
+                                    >
+                                      Remove
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col items-center justify-center">
+                                  <img
+                                    src="/images/upload-dropzone.png"
+                                    alt="Upload placeholder"
+                                    className="w-56 h-auto opacity-80"
+                                  />
+                                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                                    Drag and drop an image here, or click to browse
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG up to ~10MB</p>
+                                </div>
+                              )}
+                              <input
+                                id="visit-image-input"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  await handleVisitImageFiles(e.target.files)
+                                  // reset value to allow re-upload of same file if needed
+                                  if (e.currentTarget) e.currentTarget.value = ""
+                                }}
+                              />
+                            </div>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -1658,6 +1503,16 @@ export default function VisitsPage() {
                     <div>
                       <Label className="font-medium">Prescription Notes</Label>
                       <p className="text-gray-900 dark:text-gray-100 mt-1">{selectedVisit.prescriptionNotes}</p>
+                    </div>
+                  )}
+                  {selectedVisit.profileImage && (
+                    <div>
+                      <Label className="font-medium">Visit Image</Label>
+                      <img
+                        src={selectedVisit.profileImage || "/placeholder.svg"}
+                        alt="Visit Attachment"
+                        className="mt-2 rounded-md max-w-full"
+                      />
                     </div>
                   )}
                 </div>

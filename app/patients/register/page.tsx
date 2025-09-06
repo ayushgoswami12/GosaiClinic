@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -26,6 +26,7 @@ interface PatientData {
   medicalHistory: string
   dateOfVisit: string
   registrationDate: string
+  profileImage?: string
 }
 
 interface MedicationEntry {
@@ -65,6 +66,7 @@ export default function PatientRegistration() {
     allergies: "",
     medicalHistory: "",
     dateOfVisit: new Date().toISOString().split("T")[0],
+    profileImage: "" as string,
   })
 
   const [totalPatients, setTotalPatients] = useState(0)
@@ -91,7 +93,6 @@ export default function PatientRegistration() {
     "સવારે જમીને",
     "સવાર સાંજ ભૂખ્યા પેટે",
     "સવાર બપોરે સાંજ ભૂખ્યા પેટે",
-
 
     "બપોરે ભૂખ્યા પેટે",
     "બપોરે જમીને",
@@ -268,6 +269,87 @@ export default function PatientRegistration() {
     }
   }
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [isDragActive, setIsDragActive] = useState(false)
+
+  const handleFiles = async (files: FileList | File[]) => {
+    const file = Array.isArray(files) ? files[0] : files?.[0]
+    if (!file) return
+    try {
+      const dataUrl = await readAndCompressImage(file)
+      setFormData((prev) => ({ ...prev, profileImage: dataUrl }))
+    } catch (err) {
+      console.error("[v0] Error reading image:", err)
+      alert("Unable to process the selected image. Please try a different file.")
+    }
+  }
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return
+    await handleFiles(e.target.files)
+  }
+
+  const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragActive(true)
+  }
+
+  const onDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragActive(false)
+  }
+
+  const onDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragActive(false)
+    const { files } = e.dataTransfer
+    if (files && files.length > 0) {
+      await handleFiles(files)
+    }
+  }
+
+  const openFilePicker = () => fileInputRef.current?.click()
+
+  async function readAndCompressImage(file: File): Promise<string> {
+    const baseDataUrl = await fileToDataURL(file)
+    const resized = await resizeDataURL(baseDataUrl, 1400) // larger for print
+    return resized
+  }
+
+  function fileToDataURL(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = (e) => reject(e)
+      reader.readAsDataURL(file)
+    })
+  }
+
+  function resizeDataURL(dataUrl: string, maxSize: number): Promise<string> {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        const { width, height } = img
+        const scale = Math.min(1, maxSize / Math.max(width, height))
+        const targetW = Math.round(width * scale)
+        const targetH = Math.round(height * scale)
+        const canvas = document.createElement("canvas")
+        canvas.width = targetW
+        canvas.height = targetH
+        const ctx = canvas.getContext("2d")
+        if (!ctx) return resolve(dataUrl)
+        ctx.drawImage(img, 0, 0, targetW, targetH)
+        const out = canvas.toDataURL("image/jpeg", 0.85)
+        resolve(out)
+      }
+      img.onerror = () => resolve(dataUrl) // fallback to original if any error
+      img.src = dataUrl
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       {showSuccessPopup && (
@@ -383,6 +465,78 @@ export default function PatientRegistration() {
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       required
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="profileImage">Patient Photo / Report Image</Label>
+                    <Input
+                      id="profileImage"
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="sr-only"
+                    />
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Upload image by clicking or dragging and dropping"
+                      onClick={openFilePicker}
+                      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openFilePicker()}
+                      onDragOver={onDragOver}
+                      onDragLeave={onDragLeave}
+                      onDrop={onDrop}
+                      className={`relative w-full border-2 border-dashed rounded-lg transition-colors
+                        ${isDragActive ? "border-blue-500 bg-blue-50/40 dark:bg-blue-900/10" : "border-gray-300 dark:border-gray-600"}
+                        ${formData.profileImage ? "bg-white" : "bg-gray-50 dark:bg-gray-800"}`}
+                      style={{ minHeight: 280 }}
+                    >
+                      {formData.profileImage ? (
+                        <div className="p-3 flex flex-col gap-3">
+                          <div className="w-full aspect-[4/3] max-h-[420px] flex items-center justify-center bg-white rounded-md overflow-hidden">
+                            <img
+                              src={formData.profileImage || "/placeholder.svg"}
+                              alt="Selected image preview"
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button type="button" variant="secondary" onClick={openFilePicker}>
+                              Replace Image
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setFormData((prev) => ({ ...prev, profileImage: "" }))
+                              }}
+                            >
+                              Remove
+                            </Button>
+                            <span className="text-xs text-gray-500">
+                              Tip: Use clear scans/photos. Large images are auto-fit in print.
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="h-full min-h-[280px] flex flex-col items-center justify-center gap-3 text-center p-6">
+                          <img src="/images/upload-dropzone.png" alt="Upload placeholder" className="w-32 opacity-75" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                              Click to upload or drag and drop
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              PNG/JPG preferred. We’ll auto-resize for printing.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      The uploaded image will appear in print preview and the printed report, scaled to fit without
+                      cropping.
+                    </p>
                   </div>
                 </div>
 

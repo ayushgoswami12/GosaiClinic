@@ -4,21 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import {
-  Stethoscope,
-  Users,
-  Calendar,
-  Home,
-  UserPlus,
-  User,
-  LogOut,
-  Moon,
-  Sun,
-  Pill,
-  Menu,
-  X,
-  UserCheck,
-} from "lucide-react"
+import { Stethoscope, Users, Calendar, Home, UserPlus, User, LogOut, Moon, Sun, UserCheck, X, Menu } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
@@ -28,7 +14,6 @@ const navigation = [
   { name: "Patients", href: "/patients", icon: Users },
   { name: "Appointments", href: "/appointments", icon: Calendar },
   { name: "Visits", href: "/visits", icon: UserCheck },
-  { name: "Prescriptions", href: "/prescriptions", icon: Pill },
 ]
 
 interface UserSession {

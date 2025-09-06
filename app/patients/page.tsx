@@ -39,6 +39,7 @@ interface Patient {
   allergies: string
   medicalHistory: string
   registrationDate: string
+  profileImage?: string
 }
 
 interface Medication {
@@ -321,9 +322,28 @@ export default function PatientsPage() {
     return []
   }
 
+  const getLatestMedicationForPatient = (patientId: string): Prescription[] => {
+    const storedPrescriptions = localStorage.getItem("prescriptions")
+    if (storedPrescriptions) {
+      const prescriptions: Prescription[] = JSON.parse(storedPrescriptions)
+      const patientPrescriptions = prescriptions.filter((prescription) => prescription.patientId === patientId)
+
+      // Sort by date and get the most recent one
+      if (patientPrescriptions.length > 0) {
+        const sortedPrescriptions = patientPrescriptions.sort((a, b) => {
+          const dateA = new Date(a.prescriptionDate || 0).getTime()
+          const dateB = new Date(b.prescriptionDate || 0).getTime()
+          return dateB - dateA // Most recent first
+        })
+        return [sortedPrescriptions[0]] // Return only the latest prescription
+      }
+    }
+    return []
+  }
+
   const handlePrintPatient = (patient: Patient) => {
     setSelectedPatient(patient)
-    const medications = getMedicationsForPatient(patient.id)
+    const medications = getLatestMedicationForPatient(patient.id)
     setSelectedPatientMedications(medications)
     setShowPrintPreview(true)
   }
@@ -358,486 +378,225 @@ export default function PatientsPage() {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Patient Bill - ${selectedPatient.firstName} ${selectedPatient.lastName}</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            font-size: 10pt;
-            line-height: 1.4;
-            color: #333;
-            background: white;
-            padding: 15px;
-            max-width: 210mm;
-            margin: 0 auto;
-        }
-        
-        .clinic-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 15px;
-            border-bottom: 2px solid #3b82f6;
-            margin-bottom: 15px;
-            background-color: #f8fafc;
-            border-radius: 6px 6px 0 0;
-        }
-        
-        .clinic-branding {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .clinic-title {
-            font-size: 20pt;
-            font-weight: bold;
-            color: #1e40af;
-            line-height: 1.1;
-            letter-spacing: -0.5px;
-        }
-        
-        .clinic-subtitle {
-            font-size: 10pt;
-            color: #6b7280;
-            font-style: italic;
-            margin-top: 2px;
-        }
-        
-        .clinic-contact {
-            font-size: 8pt;
-            color: #6b7280;
-            text-align: right;
-        }
-        
-        .patient-card {
-            display: flex;
-            justify-content: space-between;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        
-        .patient-primary-info {
-            flex: 1;
-        }
-        
-        .patient-name {
-            font-size: 14pt;
-            font-weight: bold;
-            color: #1e40af;
-            margin-bottom: 4px;
-            letter-spacing: -0.3px;
-        }
-        
-        .patient-id {
-            font-size: 9pt;
-            color: #6b7280;
-            margin-bottom: 8px;
-        }
-        
-        .patient-details {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-            font-size: 8pt;
-        }
-        
-        .detail-item {
-            display: flex;
-            align-items: baseline;
-        }
-        
-        .detail-label {
-            font-weight: bold;
-            color: #6b7280;
-            margin-right: 4px;
-        }
-        
-        .detail-value {
-            color: #1f2937;
-        }
-        
-        .detail-highlight {
-            font-weight: bold;
-            color: #1e40af;
-            display: inline-block;
-            margin-left: 5px;
-        }
-        
-        .medications-section {
-            margin-top: 10px;
-        }
-        
-        .section-title {
-            font-size: 12pt;
-            font-weight: bold;
-            color: #1f2937;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 2px solid #e5e7eb;
-            letter-spacing: -0.3px;
-        }
-        
-        .medication-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 9pt;
-            margin-bottom: 15px;
-            border-radius: 6px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        
-        .medication-table th {
-            background: #f1f5f9;
-            color: #1e40af;
-            font-weight: bold;
-            text-align: left;
-            padding: 8px 10px;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .medication-table td {
-            padding: 8px 10px;
-            border: 1px solid #e2e8f0;
-            vertical-align: top;
-        }
-        
-        .medication-table tr:nth-child(even) {
-            background: #f8fafc;
-        }
-        
-        .medication-name {
-            font-weight: bold;
-            color: #1f2937;
-            font-size: 10pt;
-        }
-        
-        .medication-dose {
-            color: #059669;
-            font-size: 9pt;
-            font-weight: 500;
-        }
-        
-        .medication-qty {
-            color: #dc2626;
-            font-size: 9pt;
-            text-align: center;
-            font-weight: 500;
-        }
-        
-        .no-medications {
-            text-align: center;
-            padding: 30px;
-            color: #6b7280;
-            font-style: italic;
-            font-size: 10pt;
-            background-color: #f9fafb;
-            border-radius: 4px;
-            margin: 10px 0;
-        }
-        
-        .prescription-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 9pt;
-            margin: 10px 0;
-            padding: 10px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        
-        .doctor-info {
-            display: flex;
-            align-items: center;
-        }
-        
-        .doctor-name {
-            font-weight: bold;
-            margin-right: 8px;
-            font-size: 10pt;
-            color: #1e40af;
-        }
-        
-        .prescription-date {
-            color: #6b7280;
-            font-size: 9pt;
-        }
-        
-        .diagnosis-section {
-            font-size: 9pt;
-            padding: 10px 15px;
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            border-radius: 6px;
-            margin-bottom: 12px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        
-        .diagnosis-title {
-            font-weight: bold;
-            color: #92400e;
-            display: inline;
-            margin-right: 8px;
-            font-size: 9pt;
-        }
-        
-        .diagnosis-content {
-            color: #78350f;
-            display: inline;
-            font-size: 9pt;
-        }
-        
-        .fee-section {
-            text-align: right;
-            font-weight: bold;
-            font-size: 11pt;
-            margin-top: 10px;
-            padding: 8px 10px;
-            border-top: 2px solid #e2e8f0;
-            color: #1e40af;
-        }
-        
-        .page-footer {
-            margin-top: 20px;
-            text-align: center;
-            font-size: 8pt;
-            color: #9ca3af;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 10px;
-        }
-        
-        .print-date {
-            font-size: 8pt;
-            color: #6b7280;
-            text-align: right;
-            margin-bottom: 10px;
-            font-style: italic;
-        }
-        
-        @media print {
-            body { 
-                margin: 0; 
-                padding: 10px; 
-            }
-            * {
-                -webkit-print-color-adjust: exact !important;
-                color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            table { page-break-inside: avoid; }
-            tr { page-break-inside: avoid; }
-            .clinic-header { box-shadow: none; }
-            .patient-card { box-shadow: none; }
-            .medication-table { box-shadow: none; }
-            .diagnosis-section { box-shadow: none; }
-            .prescription-info { box-shadow: none; }
-        }
-    </style>
+  <title>Patient Bill - ${selectedPatient.firstName} ${selectedPatient.lastName}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Arial', sans-serif; font-size: 10pt; line-height: 1.4;
+      color: #333; background: white; padding: 15px; max-width: 210mm; margin: 0 auto;
+    }
+    .clinic-header { display:flex; justify-content:space-between; align-items:center; padding:12px 15px; border-bottom:2px solid #3b82f6; margin-bottom:15px; background:#f8fafc; border-radius:6px 6px 0 0; }
+    .clinic-branding { display:flex; flex-direction:column; }
+    .clinic-title { font-size:20pt; font-weight:bold; color:#1e40af; line-height:1.1; letter-spacing:-0.5px; }
+    .clinic-subtitle { font-size:10pt; color:#6b7280; font-style:italic; margin-top:2px; }
+    .clinic-contact { font-size:8pt; color:#6b7280; text-align:right; }
+    .patient-card { display:flex; justify-content:space-between; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:15px; margin-bottom:15px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+    .patient-primary-info{ flex:1; }
+    /* Hide any small thumbnail in print */
+    .patient-photo{ display:none !important; }
+    .patient-details{ display:grid; grid-template-columns:repeat(3,1fr); gap:5px; font-size:8pt; }
+    .detail-item{ display:flex; align-items:baseline; }
+    .detail-label{ font-weight:bold; color:#6b7280; margin-right:4px; }
+    .detail-value{ color:#1f2937; }
+    .medications-section{ margin-top:10px; }
+    .section-title{ font-size:12pt; font-weight:bold; color:#1f2937; margin-bottom:10px; padding-bottom:5px; border-bottom:2px solid #e5e7eb; letter-spacing:-0.3px; }
+    .medication-table{ width:100%; border-collapse:collapse; font-size:9pt; margin-bottom:15px; border-radius:6px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+    .medication-table th{ background:#f1f5f9; color:#1e40af; font-weight:bold; text-align:left; padding:8px 10px; border:1px solid #e2e8f0; }
+    .medication-table td{ padding:8px 10px; border:1px solid #e2e8f0; vertical-align:top; }
+    .medication-table tr:nth-child(even){ background:#f8fafc; }
+    .medication-name{ font-weight:bold; color:#1f2937; font-size:10pt; }
+    .medication-dose{ color:#059669; font-size:9pt; font-weight:500; }
+    .medication-qty{ color:#dc2626; font-size:9pt; text-align:center; font-weight:500; }
+    .no-medications{ text-align:center; padding:30px; color:#6b7280; font-style:italic; font-size:10pt; background:#f9fafb; border-radius:4px; margin:10px 0; }
+    .prescription-info{ display:flex; justify-content:space-between; font-size:9pt; margin:10px 0; padding:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; box-shadow:0 1px 2px rgba(0,0,0,0.05); }
+    .doctor-info{ display:flex; align-items:center; }
+    .doctor-name{ font-weight:bold; margin-right:8px; font-size:10pt; color:#1e40af; }
+    .prescription-date{ color:#6b7280; font-size:9pt; }
+    .diagnosis-section{ font-size:9pt; padding:10px 15px; background:#fef3c7; border:1px solid #f59e0b; border-radius:6px; margin-bottom:12px; box-shadow:0 1px 2px rgba(0,0,0,0.05); }
+    .diagnosis-title{ font-weight:bold; color:#92400e; display:inline; margin-right:8px; font-size:9pt; }
+    .diagnosis-content{ color:#78350f; display:inline; font-size:9pt; }
+    .fee-section{ text-align:right; font-weight:bold; font-size:11pt; margin-top:10px; padding:8px 10px; border-top:2px solid #e2e8f0; color:#1e40af; }
+    .page-footer{ margin-top:20px; text-align:center; font-size:8pt; color:#9ca3af; border-top:1px solid #e2e8f0; padding-top:10px; }
+    .print-date{ font-size:8pt; color:#6b7280; text-align:right; margin-bottom:10px; font-style:italic; }
+
+    /* Attached Image (XRAY) section - appears on its own page at end */
+    .attached-image-section{ margin:12px 0 16px 0; page-break-inside:avoid; }
+    .attached-image-title{ font-size:12pt; font-weight:bold; color:#1f2937; margin-bottom:8px; padding-bottom:5px; border-bottom:2px solid #e5e7eb; letter-spacing:-0.3px; }
+    .attached-image-box{ width:100%; height:340px; border:1px dashed #94a3b8; background:#ffffff; display:flex; align-items:center; justify-content:center; padding:8px; border-radius:6px; }
+    .attached-image-box img{ max-width:100%; max-height:100%; object-fit:contain; image-rendering:auto; }
+    .page-break{ page-break-before:always; break-before:page; }
+
+    @media print{
+      body{ margin:0; padding:10px; }
+      *{ -webkit-print-color-adjust:exact !important; color-adjust:exact !important; print-color-adjust:exact !important; }
+      img{ image-rendering:auto; }
+      /* Allow tables to break across pages for 8+ medications */
+      table{ page-break-inside:auto; }
+      tr{ page-break-inside:avoid; page-break-after:auto; }
+      thead{ display:table-header-group; }
+      tbody{ display:table-row-group; }
+      .clinic-header, .patient-card, .diagnosis-section, .prescription-info{ box-shadow:none; }
+      .attached-image-box{ height:160mm; page-break-inside:avoid; }
+    }
+  </style>
 </head>
 <body>
-    <div class="clinic-header">
-        <div class="clinic-branding">
-            <div class="clinic-title">GOSAI CLINIC</div>
-            <div class="clinic-subtitle">Complete Healthcare Solutions</div>
-        </div>
-        <div class="clinic-contact">
-            <div>📍 Opp. Taluka Panchayat, Shiv Nagar, Bhanvad, Gujarat 360510</div>
-            <div>📞 9426953220</div>
-        </div>
+  <div class="clinic-header">
+    <div class="clinic-branding">
+      <div class="clinic-title">GOSAI CLINIC</div>
+      <div class="clinic-subtitle">Complete Healthcare Solutions</div>
     </div>
-    
-    <div class="print-date">
-        Generated: ${new Date().toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })} ${new Date().toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
+    <div class="clinic-contact">
+      <div>📍 Opp. Taluka Panchayat, Shiv Nagar, Bhanvad, Gujarat 360510</div>
+      <div>📞 9426953220</div>
     </div>
-    
-    <div class="patient-card">
-        <div class="patient-primary-info">
-            <div class="patient-name">${selectedPatient.firstName} ${selectedPatient.lastName}</div>
-            <div class="patient-id">ID: ${selectedPatient.id}</div>
-            
-            <div class="patient-details">
-                <div class="detail-item">
-                    <span class="detail-label">Age:</span>
-                    <span class="detail-value">${selectedPatient.age} yrs</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Gender:</span>
-                    <span class="detail-value">${selectedPatient.gender?.charAt(0).toUpperCase() + selectedPatient.gender?.slice(1) || "Not specified"}</span>
-                </div>
-                ${
-                  selectedPatient.bloodType
-                    ? `
-                <div class="detail-item">
-                    <span class="detail-label">Blood:</span>
-                    <span class="detail-value" style="color: #dc2626; font-weight: bold;">${selectedPatient.bloodType}</span>
-                </div>
-                `
-                    : ""
-                }
-                <div class="detail-item">
-                    <span class="detail-label">Phone:</span>
-                    <span class="detail-value">${selectedPatient.phone}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Address:</span>
-                    <span class="detail-value">${selectedPatient.address}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Visit:</span>
-                    <span class="detail-value">${selectedPatient.dateOfVisit || "Not specified"}</span>
-                </div>
-            </div>
-        </div>
+  </div>
+
+  <div class="print-date">
+    Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+    ${new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+  </div>
+
+   Patient Information 
+  <div class="patient-card">
+    <div class="patient-primary-info">
+      <div class="patient-name">${selectedPatient.firstName} ${selectedPatient.lastName}</div>
+      <div class="patient-id">ID: ${selectedPatient.id}</div>
+      <div class="patient-details">
+        <div class="detail-item"><span class="detail-label">Age:</span><span class="detail-value">${selectedPatient.age} yrs</span></div>
+        <div class="detail-item"><span class="detail-label">Gender:</span><span class="detail-value">${selectedPatient.gender?.charAt(0).toUpperCase() + selectedPatient.gender?.slice(1) || "Not specified"}</span></div>
+        ${selectedPatient.bloodType ? `<div class="detail-item"><span class="detail-label">Blood:</span><span class="detail-value" style="color:#dc2626;font-weight:bold;">${selectedPatient.bloodType}</span></div>` : ""}
+        <div class="detail-item"><span class="detail-label">Phone:</span><span class="detail-value">${selectedPatient.phone}</span></div>
+        <div class="detail-item"><span class="detail-label">Address:</span><span class="detail-value">${selectedPatient.address}</span></div>
+      </div>
     </div>
-        
+  </div>
+
+  ${
+    selectedPatient.allergies
+      ? `
+    <div class="diagnosis-section" style="background:#fee2e2;border-color:#ef4444;">
+      <span class="diagnosis-title" style="color:#dc2626;">⚠️ Allergies:</span>
+      <span class="diagnosis-content" style="color:#991b1b;">${selectedPatient.allergies}</span>
+    </div>`
+      : ""
+  }
+
+  ${
+    selectedPatient.medicalHistory
+      ? `
+    <div class="diagnosis-section" style="background:#f0f9ff;border-color:#0ea5e9;">
+      <span class="diagnosis-title" style="color:#0c4a6e;">Medical History:</span>
+      <span class="diagnosis-content" style="color:#075985;">${selectedPatient.medicalHistory}</span>
+    </div>`
+      : ""
+  }
+
+   
+  <div class="medications-section">
+    <div class="section-title">Prescribed Medications</div>
     ${
-      selectedPatient.allergies
-        ? `
-    <div class="diagnosis-section" style="background: #fee2e2; border-color: #ef4444;">
-        <span class="diagnosis-title" style="color: #dc2626;">⚠️ Allergies:</span>
-        <span class="diagnosis-content" style="color: #991b1b;">${selectedPatient.allergies}</span>
-    </div>
-    `
-        : ""
-    }
-    
-    ${
-      selectedPatient.medicalHistory
-        ? `
-    <div class="diagnosis-section" style="background: #f0f9ff; border-color: #0ea5e9;">
-        <span class="diagnosis-title" style="color: #0c4a6e;">Medical History:</span>
-        <span class="diagnosis-content" style="color: #075985;">${selectedPatient.medicalHistory}</span>
-    </div>
-    `
-        : ""
-    }
-    </div>
-    
-    <div class="medications-section">
-        <div class="section-title">Prescribed Medications</div>
-        
-        ${
-          prescriptionGroups.length > 0
-            ? prescriptionGroups
-                .map(
-                  (group, index) => `
-            ${
-              group.prescription.diagnosis
-                ? `
+      prescriptionGroups.length > 0
+        ? prescriptionGroups
+            .map(
+              (group) => `
+          ${
+            group.prescription.diagnosis
+              ? `
             <div class="diagnosis-section">
-                <span class="diagnosis-title">Diagnosis:</span>
-                <span class="diagnosis-content">${group.prescription.diagnosis}</span>
+              <span class="diagnosis-title">Diagnosis:</span>
+              <span class="diagnosis-content">${group.prescription.diagnosis}</span>
+            </div>`
+              : ""
+          }
+          <div class="prescription-info">
+            <div class="doctor-info">
+              <span class="doctor-name">Dr. ${group.prescription.doctorName || "Not Specified"}</span>
+              <span class="prescription-date">Prescribed: ${group.prescription.prescriptionDate || "Date not specified"}</span>
             </div>
-            `
-                : ""
-            }
-            
-            <div class="prescription-info">
-                <div class="doctor-info">
-                    <span class="doctor-name">Dr. ${group.prescription.doctorName || "Not Specified"}</span>
-                    <span class="prescription-date">Prescribed: ${group.prescription.prescriptionDate || "Date not specified"}</span>
-                </div>
-            </div>
-            
-            ${
-              group.prescription.investigation
-                ? `
-            <div class="diagnosis-section" style="background: #f0fdf4; border-color: #22c55e; padding: 12px 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                <span class="diagnosis-title" style="color: #15803d; font-size: 9pt; margin-right: 8px;">Investigation:</span>
-                <span class="diagnosis-content" style="color: #166534; font-size: 9pt;">${group.prescription.investigation}</span>
-            </div>
-            `
-                : ""
-            }
-            
-            <table class="medication-table">
-                <thead>
-                    <tr>
-                        <th style="width: 8%;">No</th>
-                        <th style="width: 50%;">Medicine</th>
-                        <th style="width: 32%;">Dosage</th>
-                        <th style="width: 10%;">Qty</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${group.medications
-                      .map(
-                        (medication, medIndex) => `
-                        <tr>
-                            <td style="text-align: center;">${medIndex + 1}</td>
-                            <td>
-                                <div class="medication-name">${medication.name}</div>
-                            </td>
-                            <td>
-                                <div class="medication-dose">${medication.dose || "As directed"}</div>
-                            </td>
-                            <td>
-                                <div class="medication-qty">${medication.qty || "As needed"}</div>
-                            </td>
-                        </tr>
-                    `,
-                      )
-                      .join("")}
-                    </tbody>
-                </table>
-                
-                ${
-                  group.prescription.fee
-                    ? `
-                <div class="fee-section">
-                    <span class="diagnosis-title" style="color: #92400e;">Consultation Fee:</span>
-                    <span class="diagnosis-content" style="color: #92400e; font-weight: 600;">₹${group.prescription.fee}</span>
-                </div>
-                `
-                    : ""
-                }
-                
-                ${
-                  group.prescription.notes
-                    ? `
-                <div class="diagnosis-section" style="background: #f3f4f6; border-color: #6b7280;">
-                    <span class="diagnosis-title" style="color: #374151;">Notes:</span>
-                    <span class="diagnosis-content" style="color: #4b5563;">${group.prescription.notes}</span>
-                </div>
-                `
-                    : ""
-                }
-            </div>
-        `,
+          </div>
+          ${
+            group.prescription.investigation
+              ? `
+            <div class="diagnosis-section" style="background:#f0fdf4;border-color:#22c55e;padding:12px 15px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+              <span class="diagnosis-title" style="color:#15803d;font-size:9pt;margin-right:8px;">Investigation:</span>
+              <span class="diagnosis-content" style="color:#166534;font-size:9pt;">${group.prescription.investigation}</span>
+            </div>`
+              : ""
+          }
+          <table class="medication-table">
+            <thead>
+              <tr>
+                <th style="width:8%;">No</th>
+                <th style="width:50%;">Medicine</th>
+                <th style="width:32%;">Dosage</th>
+                <th style="width:10%;">Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${group.medications
+                .map(
+                  (medication, idx) => `
+                <tr>
+                  <td style="text-align:center;">${idx + 1}</td>
+                  <td><div class="medication-name">${(medication as any).name || ""}</div></td>
+                  <td><div class="medication-dose">${(medication as any).dose || "As directed"}</div></td>
+                  <td><div class="medication-qty">${(medication as any).qty || "As needed"}</div></td>
+                </tr>
+              `,
                 )
-                .join("")
-            : `
-            <div class="no-medications" style="text-align: center; padding: 15px; color: #6b7280; font-style: italic; font-size: 9pt; border: 1px dashed #e2e8f0; border-radius: 6px; margin: 10px 0;">
-                <div>No medications prescribed for this patient</div>
-                <div style="font-size: 9pt; margin-top: 5px; color: #9ca3af;">Please consult with the doctor for medical advice</div>
-            </div>
-        `
-        }
+                .join("")}
+            </tbody>
+          </table>
+          ${
+            group.prescription.fee
+              ? `
+            <div class="fee-section">
+              <span class="diagnosis-title" style="color:#92400e;">Consultation Fee:</span>
+              <span class="diagnosis-content" style="color:#92400e;font-weight:600;">₹${group.prescription.fee}</span>
+            </div>`
+              : ""
+          }
+          ${
+            group.prescription.notes
+              ? `
+            <div class="diagnosis-section" style="background:#f3f4f6;border-color:#6b7280;">
+              <span class="diagnosis-title" style="color:#374151;">Notes:</span>
+              <span class="diagnosis-content" style="color:#4b5563;">${group.prescription.notes}</span>
+            </div>`
+              : ""
+          }
+        `,
+            )
+            .join("")
+        : `
+        <div class="no-medications">
+          <div>No medications prescribed for this patient</div>
+          <div style="font-size:9pt;margin-top:5px;color:#9ca3af;">Please consult with the doctor for medical advice</div>
+        </div>`
+    }
+  </div>
+
+  
+  ${
+    selectedPatient.profileImage
+      ? `
+    <div class="page-break"></div>
+    <div class="attached-image-section">
+      <div class="attached-image-title">Attached Image</div>
+      <div class="attached-image-box">
+        <img src="${selectedPatient.profileImage}" alt="Attached medical image" />
+      </div>
     </div>
-    
-    <div class="page-footer">
-        <div><strong>GOSAI CLINIC</strong> - Your Trusted Healthcare Partner</div>
-        <div style="font-size: 8pt;">This is a computer-generated report. For queries, contact: 9426953220</div>
-        <div style="font-size: 8pt;">Report ID: ${selectedPatient.id}-${Date.now()}</div>
-    </div>
+  `
+      : ""
+  }
+
+  <div class="page-footer">
+    <div><strong>GOSAI CLINIC</strong> - Your Trusted Healthcare Partner</div>
+    <div style="font-size:8pt;">This is a computer-generated report. For queries, contact: 9426953220</div>
+    <div style="font-size:8pt;">Report ID: ${selectedPatient.id}-${Date.now()}</div>
+  </div>
 </body>
 </html>`
   }
