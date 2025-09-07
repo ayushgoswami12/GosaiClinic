@@ -287,6 +287,7 @@ export default function PatientRegistration() {
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
     await handleFiles(e.target.files)
+    if (e.currentTarget) e.currentTarget.value = ""
   }
 
   const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -311,7 +312,7 @@ export default function PatientRegistration() {
     }
   }
 
-  const openFilePicker = () => fileInputRef.current?.click()
+  const openFilePicker = () => document.getElementById("patient-image-input")?.click()
 
   async function readAndCompressImage(file: File): Promise<string> {
     const baseDataUrl = await fileToDataURL(file)
@@ -470,8 +471,7 @@ export default function PatientRegistration() {
                   <div className="space-y-2">
                     <Label htmlFor="profileImage">Patient Photo / Report Image</Label>
                     <Input
-                      id="profileImage"
-                      ref={fileInputRef}
+                      id="patient-image-input"
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
