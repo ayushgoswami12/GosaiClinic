@@ -39,6 +39,8 @@ interface Patient {
   allergies: string
   medicalHistory: string
   registrationDate: string
+  profileImage?: string
+  additionalImages?: string[]
 }
 
 interface MedicationEntry {
@@ -69,6 +71,7 @@ interface Visit {
   investigation?: string
   prescriptionNotes?: string
   profileImage?: string
+  image?: string
 }
 
 export default function VisitsPage() {
@@ -473,6 +476,21 @@ export default function VisitsPage() {
 
     const patient = patients.find((p) => p.id === selectedVisitForPrint.patientId)
 
+    const allImages = []
+    if (selectedVisitForPrint.image || selectedVisitForPrint.profileImage) {
+      allImages.push(selectedVisitForPrint.image || selectedVisitForPrint.profileImage)
+    }
+    if (patient?.profileImage && !allImages.includes(patient.profileImage)) {
+      allImages.push(patient.profileImage)
+    }
+    if (patient?.additionalImages && patient.additionalImages.length > 0) {
+      patient.additionalImages.forEach((img) => {
+        if (!allImages.includes(img)) {
+          allImages.push(img)
+        }
+      })
+    }
+
     return `
 <!DOCTYPE html>
 <html>
@@ -500,10 +518,14 @@ export default function VisitsPage() {
     .info-item{padding:8px;background:white;border-radius:4px;border:1px solid #e2e8f0;}
     .info-label{font-weight:bold;color:#1e40af;margin-bottom:4px;}
     .info-content{color:#1f2937;}
-    .attached-image-section{margin:12px 0 16px 0;page-break-inside:avoid;}
-    .attached-image-title{font-size:12pt;font-weight:bold;color:#1f2937;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;letter-spacing:-0.3px;}
-    .attached-image-box{width:100%;height:340px;border:1px dashed #94a3b8;background:#ffffff;display:flex;align-items:center;justify-content:center;padding:8px;border-radius:6px;}
-    .attached-image-box img{max-width:100%;max-height:100%;object-fit:contain;image-rendering:auto;}
+    .attached-images-section{margin:12px 0 16px 0;page-break-inside:avoid;}
+    .attached-images-title{font-size:12pt;font-weight:bold;color:#1f2937;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;letter-spacing:-0.3px;}
+    .images-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;margin-bottom:15px;}
+    .images-grid.single{grid-template-columns:1fr;}
+    .images-grid.triple{grid-template-columns:repeat(2,1fr);}
+    .images-grid.quad{grid-template-columns:repeat(2,1fr);}
+    .image-container{width:100%;height:280px;border:1px solid #94a3b8;background:#ffffff;display:flex;align-items:center;justify-content:center;padding:4px;border-radius:4px;}
+    .image-container img{max-width:100%;max-height:100%;object-fit:contain;image-rendering:auto;}
     .page-break{page-break-before:always;}
     .fee-section{text-align:right;font-weight:bold;font-size:11pt;margin-top:10px;padding:8px 10px;border-top:2px solid #e2e8f0;color:#1e40af;}
     .page-footer{margin-top:20px;text-align:center;font-size:8pt;color:#9ca3af;border-top:1px solid #e2e8f0;padding-top:10px;}
@@ -529,9 +551,10 @@ export default function VisitsPage() {
       tr{page-break-inside:avoid; page-break-after:auto;}
       thead{display:table-header-group;}
       tbody{display:table-row-group;}
-      .clinic-header,.visit-card,.diagnosis-section,.visit-info-section,.attached-image-section{box-shadow:none;}
+      .clinic-header,.visit-card,.diagnosis-section,.visit-info-section,.attached-images-section{box-shadow:none;}
       .patient-photo,.visit-thumbnail,img[width="40"],img[height="40"]{display:none !important;}
-      .attached-image-box{height:160mm;page-break-inside:avoid;}
+      .attached-images-section{page-break-inside:avoid;}
+      .image-container{height:280px;}
     }
   </style>
 </head>
@@ -650,15 +673,23 @@ export default function VisitsPage() {
       : ""
   }
 
-  <!-- Updated image section to match working patient print format -->
+  <!-- Updated image section to display all images in a grid on one page -->
   ${
-    selectedVisitForPrint.image || selectedVisitForPrint.profileImage
+    allImages.length > 0
       ? `
   <div class="page-break"></div>
-  <div class="attached-image-section">
-    <div class="attached-image-title">Attached Image</div>
-    <div class="attached-image-box">
-      <img src="${selectedVisitForPrint.image || selectedVisitForPrint.profileImage}" alt="Attached medical image" />
+  <div class="attached-images-section">
+    <div class="attached-images-title">Attached Images (${allImages.length})</div>
+    <div class="images-grid ${allImages.length === 1 ? "single" : allImages.length === 3 ? "triple" : "quad"}">
+      ${allImages
+        .map(
+          (img, index) => `
+        <div class="image-container">
+          <img src="${img}" alt="Medical image ${index + 1}" />
+        </div>
+      `,
+        )
+        .join("")}
     </div>
   </div>`
       : ""

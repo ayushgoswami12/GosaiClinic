@@ -40,6 +40,7 @@ interface Patient {
   medicalHistory: string
   registrationDate: string
   profileImage?: string
+  additionalImages?: string[]
 }
 
 interface Medication {
@@ -260,9 +261,8 @@ export default function PatientsPage() {
   }
 
   const startEdit = (patient: Patient) => {
-    setSelectedPatient(patient)
-    setIsEditing(true)
-    setEditForm({ ...patient })
+    // Redirect to the registration page with patient ID as query parameter
+    window.location.href = `/patients/register?patientId=${patient.id}`
   }
 
   const cancelEdit = () => {
@@ -374,6 +374,14 @@ export default function PatientsPage() {
       })
     })
 
+    const allImages = []
+    if (selectedPatient.profileImage) {
+      allImages.push(selectedPatient.profileImage)
+    }
+    if (selectedPatient.additionalImages && selectedPatient.additionalImages.length > 0) {
+      allImages.push(...selectedPatient.additionalImages)
+    }
+
     return `
 <!DOCTYPE html>
 <html>
@@ -419,11 +427,15 @@ export default function PatientsPage() {
     .page-footer{ margin-top:20px; text-align:center; font-size:8pt; color:#9ca3af; border-top:1px solid #e2e8f0; padding-top:10px; }
     .print-date{ font-size:8pt; color:#6b7280; text-align:right; margin-bottom:10px; font-style:italic; }
 
-    /* Attached Image (XRAY) section - appears on its own page at end */
-    .attached-image-section{ margin:12px 0 16px 0; page-break-inside:avoid; }
-    .attached-image-title{ font-size:12pt; font-weight:bold; color:#1f2937; margin-bottom:8px; padding-bottom:5px; border-bottom:2px solid #e5e7eb; letter-spacing:-0.3px; }
-    .attached-image-box{ width:100%; height:340px; border:1px dashed #94a3b8; background:#ffffff; display:flex; align-items:center; justify-content:center; padding:8px; border-radius:6px; }
-    .attached-image-box img{ max-width:100%; max-height:100%; object-fit:contain; image-rendering:auto; }
+    /* Updated image section to display all images in a grid on one page */
+    .attached-images-section{ margin:12px 0 16px 0; page-break-inside:avoid; }
+    .attached-images-title{ font-size:12pt; font-weight:bold; color:#1f2937; margin-bottom:8px; padding-bottom:5px; border-bottom:2px solid #e5e7eb; letter-spacing:-0.3px; }
+    .images-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; width:100%; }
+    .images-grid.single{ grid-template-columns:1fr; }
+    .images-grid.triple{ grid-template-columns:repeat(2,1fr); }
+    .images-grid.quad{ grid-template-columns:repeat(2,1fr); }
+    .image-container{ width:100%; height:160px; border:1px solid #94a3b8; background:#ffffff; display:flex; align-items:center; justify-content:center; padding:4px; border-radius:4px; }
+    .image-container img{ max-width:100%; max-height:100%; object-fit:contain; image-rendering:auto; }
     .page-break{ page-break-before:always; break-before:page; }
 
     @media print{
@@ -436,7 +448,8 @@ export default function PatientsPage() {
       thead{ display:table-header-group; }
       tbody{ display:table-row-group; }
       .clinic-header, .patient-card, .diagnosis-section, .prescription-info{ box-shadow:none; }
-      .attached-image-box{ height:160mm; page-break-inside:avoid; }
+      .attached-images-section{ page-break-inside:avoid; }
+      .image-container{ height:120px; }
     }
   </style>
 </head>
@@ -452,140 +465,118 @@ export default function PatientsPage() {
     </div>
   </div>
 
-  <div class="print-date">
-    Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
-    ${new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
-  </div>
+  <div class="print-date">Printed on: ${new Date().toLocaleDateString("en-IN", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })}</div>
 
-   Patient Information 
   <div class="patient-card">
     <div class="patient-primary-info">
-      <div class="patient-name">${selectedPatient.firstName} ${selectedPatient.lastName}</div>
-      <div class="patient-id">ID: ${selectedPatient.id}</div>
+      <div style="font-size:14pt; font-weight:bold; color:#1e40af; margin-bottom:4px; letter-spacing:-0.3px;">
+        ${selectedPatient.firstName} ${selectedPatient.lastName}
+      </div>
+      <div style="font-size:9pt; color:#6b7280; margin-bottom:8px;">Patient ID: ${selectedPatient.id}</div>
       <div class="patient-details">
-        <div class="detail-item"><span class="detail-label">Age:</span><span class="detail-value">${selectedPatient.age} yrs</span></div>
-        <div class="detail-item"><span class="detail-label">Gender:</span><span class="detail-value">${selectedPatient.gender?.charAt(0).toUpperCase() + selectedPatient.gender?.slice(1) || "Not specified"}</span></div>
-        ${selectedPatient.bloodType ? `<div class="detail-item"><span class="detail-label">Blood:</span><span class="detail-value" style="color:#dc2626;font-weight:bold;">${selectedPatient.bloodType}</span></div>` : ""}
-        <div class="detail-item"><span class="detail-label">Phone:</span><span class="detail-value">${selectedPatient.phone}</span></div>
-        <div class="detail-item"><span class="detail-label">Address:</span><span class="detail-value">${selectedPatient.address}</span></div>
+        <div class="detail-item">
+          <span class="detail-label">Age:</span>
+          <span class="detail-value">${selectedPatient.age} years</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Gender:</span>
+          <span class="detail-value">${selectedPatient.gender}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Phone:</span>
+          <span class="detail-value">${selectedPatient.phone}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Blood Type:</span>
+          <span class="detail-value">${selectedPatient.bloodType || "Not specified"}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Allergies:</span>
+          <span class="detail-value">${selectedPatient.allergies || "None reported"}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Registered:</span>
+          <span class="detail-value">${new Date(selectedPatient.registrationDate).toLocaleDateString()}</span>
+        </div>
       </div>
     </div>
   </div>
 
   ${
-    selectedPatient.allergies
+    prescriptionGroups.length > 0
       ? `
-    <div class="diagnosis-section" style="background:#fee2e2;border-color:#ef4444;">
-      <span class="diagnosis-title" style="color:#dc2626;">⚠️ Allergies:</span>
-      <span class="diagnosis-content" style="color:#991b1b;">${selectedPatient.allergies}</span>
-    </div>`
-      : ""
-  }
-
-  ${
-    selectedPatient.medicalHistory
-      ? `
-    <div class="diagnosis-section" style="background:#f0f9ff;border-color:#0ea5e9;">
-      <span class="diagnosis-title" style="color:#0c4a6e;">Medical History:</span>
-      <span class="diagnosis-content" style="color:#075985;">${selectedPatient.medicalHistory}</span>
-    </div>`
-      : ""
-  }
-
-   
   <div class="medications-section">
-    <div class="section-title">Prescribed Medications</div>
-    ${
-      prescriptionGroups.length > 0
-        ? prescriptionGroups
+    <div class="section-title">Prescription History</div>
+    ${prescriptionGroups
+      .map(
+        (group) => `
+      <div class="prescription-info">
+        <div class="doctor-info">
+          <span class="doctor-name">Dr. ${group.prescription.doctorName}</span>
+          <span class="prescription-date">${new Date(group.prescription.date).toLocaleDateString()}</span>
+        </div>
+      </div>
+      ${
+        group.prescription.diagnosis
+          ? `
+      <div class="diagnosis-section">
+        <span class="diagnosis-title">Diagnosis:</span>
+        <span class="diagnosis-content">${group.prescription.diagnosis}</span>
+      </div>`
+          : ""
+      }
+      <table class="medication-table">
+        <thead>
+          <tr>
+            <th>Medicine</th>
+            <th>Dosage</th>
+            <th>Frequency</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${group.medications
             .map(
-              (group) => `
-          ${
-            group.prescription.diagnosis
-              ? `
-            <div class="diagnosis-section">
-              <span class="diagnosis-title">Diagnosis:</span>
-              <span class="diagnosis-content">${group.prescription.diagnosis}</span>
-            </div>`
-              : ""
-          }
-          <div class="prescription-info">
-            <div class="doctor-info">
-              <span class="doctor-name">Dr. ${group.prescription.doctorName || "Not Specified"}</span>
-              <span class="prescription-date">Prescribed: ${group.prescription.prescriptionDate || "Date not specified"}</span>
-            </div>
-          </div>
-          ${
-            group.prescription.investigation
-              ? `
-            <div class="diagnosis-section" style="background:#f0fdf4;border-color:#22c55e;padding:12px 15px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-              <span class="diagnosis-title" style="color:#15803d;font-size:9pt;margin-right:8px;">Investigation:</span>
-              <span class="diagnosis-content" style="color:#166534;font-size:9pt;">${group.prescription.investigation}</span>
-            </div>`
-              : ""
-          }
-          <table class="medication-table">
-            <thead>
-              <tr>
-                <th style="width:8%;">No</th>
-                <th style="width:50%;">Medicine</th>
-                <th style="width:32%;">Dosage</th>
-                <th style="width:10%;">Qty</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${group.medications
-                .map(
-                  (medication, idx) => `
-                <tr>
-                  <td style="text-align:center;">${idx + 1}</td>
-                  <td><div class="medication-name">${(medication as any).name || ""}</div></td>
-                  <td><div class="medication-dose">${(medication as any).dose || "As directed"}</div></td>
-                  <td><div class="medication-qty">${(medication as any).qty || "As needed"}</div></td>
-                </tr>
-              `,
-                )
-                .join("")}
-            </tbody>
-          </table>
-          ${
-            group.prescription.fee
-              ? `
-            <div class="fee-section">
-              <span class="diagnosis-title" style="color:#92400e;">Consultation Fee:</span>
-              <span class="diagnosis-content" style="color:#92400e;font-weight:600;">₹${group.prescription.fee}</span>
-            </div>`
-              : ""
-          }
-          ${
-            group.prescription.notes
-              ? `
-            <div class="diagnosis-section" style="background:#f3f4f6;border-color:#6b7280;">
-              <span class="diagnosis-title" style="color:#374151;">Notes:</span>
-              <span class="diagnosis-content" style="color:#4b5563;">${group.prescription.notes}</span>
-            </div>`
-              : ""
-          }
-        `,
+              (med) => `
+            <tr>
+              <td><span class="medication-name">${med.name}</span></td>
+              <td><span class="medication-qty">${med.dosage}</span></td>
+              <td><span class="medication-dose">${med.frequency.join(", ")}</span></td>
+              <td>${med.duration}</td>
+            </tr>`,
             )
-            .join("")
-        : `
-        <div class="no-medications">
-          <div>No medications prescribed for this patient</div>
-          <div style="font-size:9pt;margin-top:5px;color:#9ca3af;">Please consult with the doctor for medical advice</div>
-        </div>`
-    }
-  </div>
+            .join("")}
+        </tbody>
+      </table>
+      ${group.prescription.fee ? `<div class="fee-section">Consultation Fee: ₹${group.prescription.fee}</div>` : ""}
+    `,
+      )
+      .join("")}
+  </div>`
+      : `<div class="no-medications">No prescription history available</div>`
+  }
 
-  
   ${
-    selectedPatient.profileImage
+    allImages.length > 0
       ? `
     <div class="page-break"></div>
-    <div class="attached-image-section">
-      <div class="attached-image-title">Attached Image</div>
-      <div class="attached-image-box">
-        <img src="${selectedPatient.profileImage}" alt="Attached medical image" />
+    <div class="attached-images-section">
+      <div class="attached-images-title">Attached Images (${allImages.length})</div>
+      <div class="images-grid ${allImages.length === 1 ? "single" : allImages.length === 3 ? "triple" : "quad"}">
+        ${allImages
+          .map(
+            (img, index) => `
+          <div class="image-container">
+            <img src="${img}" alt="Medical image ${index + 1}" />
+          </div>
+        `,
+          )
+          .join("")}
       </div>
     </div>
   `
@@ -594,11 +585,11 @@ export default function PatientsPage() {
 
   <div class="page-footer">
     <div><strong>GOSAI CLINIC</strong> - Your Trusted Healthcare Partner</div>
-    <div style="font-size:8pt;">This is a computer-generated report. For queries, contact: 9426953220</div>
-    <div style="font-size:8pt;">Report ID: ${selectedPatient.id}-${Date.now()}</div>
+    <div>This is a computer-generated document. No signature required.</div>
   </div>
 </body>
-</html>`
+</html>
+    `
   }
 
   return (

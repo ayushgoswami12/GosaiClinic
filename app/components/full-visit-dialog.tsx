@@ -40,6 +40,8 @@ interface Patient {
   registrationDate: string
   visits?: number
   visitRecords?: any[]
+  profileImage?: string
+  additionalImages?: string[]
 }
 
 interface FullVisitDialogProps {
@@ -104,6 +106,16 @@ export function FullVisitDialog({
           }
           body {
             background: white !important;
+          }
+          .grid-cols-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            page-break-inside: avoid;
+          }
+          img {
+            max-height: 180px !important;
+            object-fit: contain;
           }
         }
         .print-only {
@@ -498,6 +510,32 @@ export function FullVisitDialog({
                     <User className="h-4 w-4 text-gray-500" />
                     <span className="font-medium">{patient.firstName} {patient.lastName}</span>
                   </div>
+                  
+                  {/* Patient Images */}
+                  {(patient.profileImage || (patient.additionalImages && patient.additionalImages.length > 0)) && (
+                    <div className="mt-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        {patient.profileImage && (
+                          <div className="aspect-[4/3] flex items-center justify-center bg-white rounded-md overflow-hidden border border-gray-200">
+                            <img
+                              src={patient.profileImage}
+                              alt="Patient profile"
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
+                        )}
+                        {patient.additionalImages && patient.additionalImages.map((img, index) => (
+                          <div key={index} className="aspect-[4/3] flex items-center justify-center bg-white rounded-md overflow-hidden border border-gray-200">
+                            <img
+                              src={img}
+                              alt={`Additional image ${index + 1}`}
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-500">ID:</span>
                     <span className="text-sm">{patient.id}</span>
@@ -577,6 +615,24 @@ export function FullVisitDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={onSave}>Save Visit</Button>
         </div>
+        
+        {/* Print Styles */}
+        <style jsx global>{`
+          @media print {
+            .grid-cols-2 {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 12px;
+              page-break-inside: avoid;
+              margin-bottom: 15px;
+            }
+            img {
+              max-height: 280px !important;
+              object-fit: contain;
+              width: 100%;
+            }
+          }
+        `}</style>
       </div>
     </div>
   )

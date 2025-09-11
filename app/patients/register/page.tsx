@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, UserPlus, Users, Pill, ChevronDown, ChevronUp, CheckCircle, Trash2, Languages } from "lucide-react"
+import { ArrowLeft, UserPlus, Users, Pill, ChevronDown, ChevronUp, CheckCircle, Trash2, Languages, Edit } from "lucide-react"
 import Link from "next/link"
 import { MedicineAutocomplete } from "@/components/ui/medicine-autocomplete"
 import { useRouter } from "next/navigation"
@@ -27,6 +27,7 @@ interface PatientData {
   dateOfVisit: string
   registrationDate: string
   profileImage?: string
+  additionalImages?: string[] // Array to store multiple images
 }
 
 interface MedicationEntry {
@@ -54,6 +55,8 @@ export default function PatientRegistration() {
   const router = useRouter()
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [patientId, setPatientId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -67,6 +70,7 @@ export default function PatientRegistration() {
     medicalHistory: "",
     dateOfVisit: new Date().toISOString().split("T")[0],
     profileImage: "" as string,
+    additionalImages: [] as string[],
   })
 
   const [totalPatients, setTotalPatients] = useState(0)
@@ -79,12 +83,77 @@ export default function PatientRegistration() {
 
   const [medicationTable, setMedicationTable] = useState<MedicationEntry[]>([])
   const [currentMedication, setCurrentMedication] = useState({
+    id: "",
     name: "",
     dose: "",
     qty: "",
   })
+  const [isEditingMedication, setIsEditingMedication] = useState(false)
   const [customDose, setCustomDose] = useState("")
   const [isTranslating, setIsTranslating] = useState(false)
+  
+  // Load patient data if patientId is provided in URL
+  useEffect(() => {
+    // Get patientId from URL query parameters
+    const queryParams = new URLSearchParams(window.location.search)
+    const id = queryParams.get('patientId')
+    
+    if (id) {
+      setPatientId(id)
+      setIsEditMode(true)
+      
+      // Load patient data from localStorage
+      const storedPatients = JSON.parse(localStorage.getItem("patients") || "[]")
+      const patient = storedPatients.find((p: PatientData) => p.id === id)
+      
+      if (patient) {
+        // Pre-fill form with patient data
+        setFormData({
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          age: patient.age,
+          gender: patient.gender,
+          phone: patient.phone,
+          address: patient.address,
+          bloodType: patient.bloodType || "",
+          allergies: patient.allergies || "",
+          medicalHistory: patient.medicalHistory || "",
+          dateOfVisit: new Date().toISOString().split("T")[0],
+          profileImage: patient.profileImage || "",
+          additionalImages: patient.additionalImages || [],
+        })
+        
+        // Load existing prescriptions for this patient
+        const storedPrescriptions = JSON.parse(localStorage.getItem("prescriptions") || "[]")
+        const patientPrescriptions = storedPrescriptions.filter(
+          (prescription: Prescription) => prescription.patientId === id
+        )
+        
+        // If patient has prescriptions, load the most recent one's medications
+        if (patientPrescriptions.length > 0) {
+          // Sort by date descending to get the most recent prescription
+          patientPrescriptions.sort((a: Prescription, b: Prescription) => 
+            new Date(b.prescriptionDate).getTime() - new Date(a.prescriptionDate).getTime()
+          )
+          
+          const latestPrescription = patientPrescriptions[0]
+          if (latestPrescription.medications && latestPrescription.medications.length > 0) {
+            setMedicationTable(latestPrescription.medications)
+            setShowPrescription(true)
+            setSelectedDoctor(latestPrescription.doctorName)
+            setDiagnosis(latestPrescription.diagnosis || "")
+            setInvestigation(latestPrescription.investigation || "")
+            setFee(latestPrescription.fee || "")
+            setPrescriptionNotes(latestPrescription.notes || "")
+          }
+        }
+      }
+    }
+    
+    // Load total patients count
+    const storedPatients = JSON.parse(localStorage.getItem("patients") || "[]")
+    setTotalPatients(storedPatients.length)
+  }, [])
 
   const doctors = ["Dr. Tansukh Gosai", "Dr. Devang Gosai", "Dr. Dhara Gosai"]
 
@@ -118,20 +187,57 @@ export default function PatientRegistration() {
 
     const doseToUse = currentMedication.dose === "CUSTOM" ? customDose : currentMedication.dose
 
-    const newMedication: MedicationEntry = {
-      id: Date.now().toString(),
-      name: currentMedication.name,
-      dose: doseToUse,
-      qty: currentMedication.qty,
-    }
+    if (isEditingMedication && currentMedication.id) {
+      // Update existing medication
+      const updatedMedicationTable = medicationTable.map(med => {
+        if (med.id === currentMedication.id) {
+          return {
+            ...med,
+            name: currentMedication.name,
+            dose: doseToUse,
+            qty: currentMedication.qty
+          }
+        }
+        return med
+      })
+      
+      setMedicationTable(updatedMedicationTable)
+      setIsEditingMedication(false)
+    } else {
+      // Add new medication
+      const newMedication: MedicationEntry = {
+        id: Date.now().toString(),
+        name: currentMedication.name,
+        dose: doseToUse,
+        qty: currentMedication.qty,
+      }
 
-    setMedicationTable([...medicationTable, newMedication])
-    setCurrentMedication({ name: "", dose: "", qty: "" })
+      setMedicationTable([...medicationTable, newMedication])
+    }
+    
+    // Reset form
+    setCurrentMedication({ id: "", name: "", dose: "", qty: "" })
     setCustomDose("")
   }
 
   const removeMedicationFromTable = (id: string) => {
     setMedicationTable(medicationTable.filter((med) => med.id !== id))
+  }
+  
+  const editMedicationInTable = (medication: MedicationEntry) => {
+    setCurrentMedication({
+      id: medication.id,
+      name: medication.name,
+      dose: medication.dose === "CUSTOM" ? "CUSTOM" : medication.dose,
+      qty: medication.qty
+    })
+    
+    if (medication.dose !== "CUSTOM" && !frequencyOptions.includes(medication.dose)) {
+      setCurrentMedication(prev => ({ ...prev, dose: "CUSTOM" }))
+      setCustomDose(medication.dose)
+    }
+    
+    setIsEditingMedication(true)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -157,57 +263,126 @@ export default function PatientRegistration() {
     }
 
     try {
-      const newPatient: PatientData = {
-        id: `PAT-${Date.now()}`,
-        ...formData,
-        registrationDate: new Date().toLocaleString(),
-      }
-
       const existingPatients = JSON.parse(localStorage.getItem("patients") || "[]")
-      const updatedPatients = [...existingPatients, newPatient]
+      let updatedPatients;
+      let patientForPrescription;
+      
+      if (isEditMode && patientId) {
+        // Update existing patient
+        updatedPatients = existingPatients.map((patient: PatientData) => {
+          if (patient.id === patientId) {
+            patientForPrescription = {
+              ...patient,
+              ...formData
+            };
+            return patientForPrescription;
+          }
+          return patient;
+        });
+        
+        setSuccessMessage(`Patient ${formData.firstName} ${formData.lastName} updated successfully!`);
+      } else {
+        // Create new patient
+        const newPatient: PatientData = {
+          id: `PAT-${Date.now()}`,
+          ...formData,
+          registrationDate: new Date().toLocaleString(),
+        }
+        
+        patientForPrescription = newPatient;
+        updatedPatients = [...existingPatients, newPatient];
+        
+        setSuccessMessage(`Patient ${formData.firstName} ${formData.lastName} registered successfully! Total patients: ${updatedPatients.length}`);
+      }
+      
       localStorage.setItem("patients", JSON.stringify(updatedPatients))
 
       if (showPrescription && selectedDoctor) {
-        const newPrescription: Prescription = {
-          id: Date.now().toString(),
-          patientId: newPatient.id,
-          patientName: `${formData.firstName} ${formData.lastName}`,
-          doctorName: selectedDoctor,
-          medications: medicationTable,
-          diagnosis,
-          investigation,
-          fee,
-          notes: prescriptionNotes,
-          prescriptionDate: new Date().toISOString().split("T")[0],
-          status: "Active",
-        }
-
         const existingPrescriptions = JSON.parse(localStorage.getItem("prescriptions") || "[]")
-        const updatedPrescriptions = [...existingPrescriptions, newPrescription]
+        let updatedPrescriptions;
+        
+        if (isEditMode) {
+          // Check if there's an existing prescription for this patient from today
+          const today = new Date().toISOString().split("T")[0];
+          const existingPrescriptionIndex = existingPrescriptions.findIndex(
+            (p: Prescription) => p.patientId === patientId && p.prescriptionDate === today
+          );
+          
+          if (existingPrescriptionIndex >= 0) {
+            // Update existing prescription from today
+            updatedPrescriptions = existingPrescriptions.map((p: Prescription, index: number) => {
+              if (index === existingPrescriptionIndex) {
+                return {
+                  ...p,
+                  patientName: `${formData.firstName} ${formData.lastName}`,
+                  doctorName: selectedDoctor,
+                  medications: medicationTable,
+                  diagnosis,
+                  investigation,
+                  fee,
+                  notes: prescriptionNotes,
+                }
+              }
+              return p;
+            });
+          } else {
+            // Create a new prescription for this patient
+            const newPrescription: Prescription = {
+              id: Date.now().toString(),
+              patientId: patientForPrescription.id,
+              patientName: `${formData.firstName} ${formData.lastName}`,
+              doctorName: selectedDoctor,
+              medications: medicationTable,
+              diagnosis,
+              investigation,
+              fee,
+              notes: prescriptionNotes,
+              prescriptionDate: new Date().toISOString().split("T")[0],
+              status: "Active",
+            }
+            updatedPrescriptions = [...existingPrescriptions, newPrescription];
+          }
+        } else {
+          // Create a new prescription for a new patient
+          const newPrescription: Prescription = {
+            id: Date.now().toString(),
+            patientId: patientForPrescription.id,
+            patientName: `${formData.firstName} ${formData.lastName}`,
+            doctorName: selectedDoctor,
+            medications: medicationTable,
+            diagnosis,
+            investigation,
+            fee,
+            notes: prescriptionNotes,
+            prescriptionDate: new Date().toISOString().split("T")[0],
+            status: "Active",
+          }
+          updatedPrescriptions = [...existingPrescriptions, newPrescription];
+        }
+        
         localStorage.setItem("prescriptions", JSON.stringify(updatedPrescriptions))
 
         window.dispatchEvent(new CustomEvent("prescriptionAdded"))
+        
+        if (isEditMode) {
+          setSuccessMessage(`Patient ${formData.firstName} ${formData.lastName} updated successfully with prescription!`);
+        } else {
+          setSuccessMessage(`Patient ${formData.firstName} ${formData.lastName} registered successfully with prescription! Total patients: ${updatedPatients.length}`);
+        }
       }
 
       setTotalPatients(updatedPatients.length)
       window.dispatchEvent(new CustomEvent("patientAdded"))
-
-      const message =
-        showPrescription && selectedDoctor
-          ? `Patient ${formData.firstName} ${formData.lastName} registered successfully with prescription! Total patients: ${updatedPatients.length}`
-          : `Patient ${formData.firstName} ${formData.lastName} registered successfully! Total patients: ${updatedPatients.length}`
-
-      setSuccessMessage(message)
       setShowSuccessPopup(true)
 
       setTimeout(() => {
         router.push("/patients")
       }, 2000)
 
-      console.log("New patient registered:", newPatient)
+      console.log(isEditMode ? "Patient updated:" : "New patient registered:", patientForPrescription)
     } catch (error) {
       console.error("Error saving patient data:", error)
-      alert("There was an error registering the patient. Please try again.")
+      alert("There was an error " + (isEditMode ? "updating" : "registering") + " the patient. Please try again.")
     }
   }
 
@@ -273,14 +448,67 @@ export default function PatientRegistration() {
   const [isDragActive, setIsDragActive] = useState(false)
 
   const handleFiles = async (files: FileList | File[]) => {
-    const file = Array.isArray(files) ? files[0] : files?.[0]
-    if (!file) return
+    if (!files || files.length === 0) return
+    
     try {
-      const dataUrl = await readAndCompressImage(file)
-      setFormData((prev) => ({ ...prev, profileImage: dataUrl }))
+      // Convert FileList to array for easier handling
+      const fileArray = Array.from(files)
+      
+      // Limit to processing at most 4 files
+      const filesToProcess = fileArray.slice(0, 4)
+      
+      // Process the first file as the main profile image if we don't have one yet
+      if (!formData.profileImage && filesToProcess.length > 0) {
+        const mainImageDataUrl = await readAndCompressImage(filesToProcess[0])
+        
+        // If we have more than one file, process the rest as additional images
+        if (filesToProcess.length > 1) {
+          const additionalFiles = filesToProcess.slice(1)
+          const additionalDataUrls = await Promise.all(
+            additionalFiles.map(file => readAndCompressImage(file))
+          )
+          
+          setFormData(prev => ({
+            ...prev,
+            profileImage: mainImageDataUrl,
+            additionalImages: [...(prev.additionalImages || []), ...additionalDataUrls]
+          }))
+        } else {
+          // Just set the main profile image
+          setFormData(prev => ({ ...prev, profileImage: mainImageDataUrl }))
+        }
+      } else {
+        // We already have a main image, so add these as additional images
+        const additionalDataUrls = await Promise.all(
+          filesToProcess.map(file => readAndCompressImage(file))
+        )
+        
+        // Make sure we don't exceed 4 images total (1 main + 3 additional)
+        const currentImages = formData.additionalImages || []
+        const totalImagesCount = 1 + currentImages.length + additionalDataUrls.length // 1 for main image
+        
+        if (totalImagesCount > 4) {
+          const spaceLeft = 4 - (1 + currentImages.length)
+          const newImages = additionalDataUrls.slice(0, Math.max(0, spaceLeft))
+          
+          setFormData(prev => ({
+            ...prev,
+            additionalImages: [...(prev.additionalImages || []), ...newImages]
+          }))
+          
+          if (spaceLeft < additionalDataUrls.length) {
+            alert(`Only added ${spaceLeft} image(s). Maximum of 4 images total allowed.`)
+          }
+        } else {
+          setFormData(prev => ({
+            ...prev,
+            additionalImages: [...(prev.additionalImages || []), ...additionalDataUrls]
+          }))
+        }
+      }
     } catch (err) {
-      console.error("[v0] Error reading image:", err)
-      alert("Unable to process the selected image. Please try a different file.")
+      console.error("[v0] Error reading images:", err)
+      alert("Unable to process one or more selected images. Please try different files.")
     }
   }
 
@@ -382,11 +610,19 @@ export default function PatientRegistration() {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center space-x-2">
-                <UserPlus className="h-8 w-8 text-blue-600" />
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Patient Registration</h1>
+                {isEditMode ? (
+                  <Edit className="h-8 w-8 text-blue-600" />
+                ) : (
+                  <UserPlus className="h-8 w-8 text-blue-600" />
+                )}
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {isEditMode ? "Edit Patient" : "Patient Registration"}
+                </h1>
               </div>
               <p className="text-gray-600 dark:text-gray-400 mt-2">
-                Register a new patient in GOSAI CLINIC management system.
+                {isEditMode 
+                  ? "Update patient information in GOSAI CLINIC management system."
+                  : "Register a new patient in GOSAI CLINIC management system."}
               </p>
             </div>
             <div className="text-right">
@@ -476,6 +712,7 @@ export default function PatientRegistration() {
                       accept="image/*"
                       onChange={handleImageChange}
                       className="sr-only"
+                      multiple
                     />
                     <div
                       role="button"
@@ -493,29 +730,79 @@ export default function PatientRegistration() {
                     >
                       {formData.profileImage ? (
                         <div className="p-3 flex flex-col gap-3">
-                          <div className="w-full aspect-[4/3] max-h-[420px] flex items-center justify-center bg-white rounded-md overflow-hidden">
-                            <img
-                              src={formData.profileImage || "/placeholder.svg"}
-                              alt="Selected image preview"
-                              className="max-w-full max-h-full object-contain"
-                            />
+                          <div className="grid grid-cols-2 gap-2">
+                            {/* Main profile image */}
+                            <div className="col-span-2 aspect-[4/3] max-h-[280px] flex items-center justify-center bg-white rounded-md overflow-hidden">
+                              <img
+                                src={formData.profileImage || "/placeholder.svg"}
+                                alt="Main image preview"
+                                className="max-w-full max-h-full object-contain"
+                              />
+                            </div>
+                            
+                            {/* Additional images */}
+                            {formData.additionalImages && formData.additionalImages.map((img, index) => (
+                              <div key={index} className="relative aspect-[4/3] flex items-center justify-center bg-white rounded-md overflow-hidden border border-gray-200">
+                                <img
+                                  src={img}
+                                  alt={`Additional image ${index + 1}`}
+                                  className="max-w-full max-h-full object-contain"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  className="absolute top-1 right-1 h-6 w-6 p-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const updatedImages = [...(formData.additionalImages || [])];
+                                    updatedImages.splice(index, 1);
+                                    setFormData(prev => ({ ...prev, additionalImages: updatedImages }));
+                                  }}
+                                >
+                                  ×
+                                </Button>
+                              </div>
+                            ))}
+                            
+                            {/* Placeholder slots for remaining images */}
+                            {Array.from({ length: Math.max(0, 3 - (formData.additionalImages?.length || 0)) }).map((_, index) => (
+                              <div 
+                                key={`empty-${index}`} 
+                                className="aspect-[4/3] flex items-center justify-center bg-gray-50 rounded-md border border-dashed border-gray-300 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openFilePicker();
+                                }}
+                              >
+                                <span className="text-gray-400 text-sm">Add image</span>
+                              </div>
+                            ))}
                           </div>
+                          
                           <div className="flex items-center gap-2">
-                            <Button type="button" variant="secondary" onClick={openFilePicker}>
-                              Replace Image
+                            <Button 
+                              type="button" 
+                              variant="secondary" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openFilePicker();
+                              }}
+                            >
+                              Add Images
                             </Button>
                             <Button
                               type="button"
                               variant="outline"
                               onClick={(e) => {
                                 e.stopPropagation()
-                                setFormData((prev) => ({ ...prev, profileImage: "" }))
+                                setFormData((prev) => ({ ...prev, profileImage: "", additionalImages: [] }))
                               }}
                             >
-                              Remove
+                              Remove All
                             </Button>
                             <span className="text-xs text-gray-500">
-                              Tip: Use clear scans/photos. Large images are auto-fit in print.
+                              Tip: Up to 4 images total. Images will be properly arranged in print.
                             </span>
                           </div>
                         </div>
@@ -534,9 +821,25 @@ export default function PatientRegistration() {
                       )}
                     </div>
                     <p className="text-xs text-gray-500">
-                      The uploaded image will appear in print preview and the printed report, scaled to fit without
+                      The uploaded images will appear in print preview and the printed report, scaled to fit without
                       cropping.
                     </p>
+                    <style jsx global>{`
+                      @media print {
+                        .grid-cols-2 {
+                          display: grid;
+                          grid-template-columns: repeat(2, 1fr);
+                          gap: 12px;
+                          page-break-inside: avoid;
+                          margin-bottom: 15px;
+                        }
+                        img {
+                          max-height: 280px !important;
+                          object-fit: contain;
+                          width: 100%;
+                        }
+                      }
+                    `}</style>
                   </div>
                 </div>
 
@@ -786,9 +1089,9 @@ export default function PatientRegistration() {
                           <Button
                             type="button"
                             onClick={addMedicationToTable}
-                            className="bg-green-600 hover:bg-green-700 w-full"
+                            className={`${isEditingMedication ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"} w-full`}
                           >
-                            Add
+                            {isEditingMedication ? "Update" : "Add"}
                           </Button>
                         </div>
                       </div>
@@ -831,14 +1134,24 @@ export default function PatientRegistration() {
                                     {medication.qty}
                                   </td>
                                   <td className="px-4 py-3 text-sm">
-                                    <Button
-                                      type="button"
-                                      onClick={() => removeMedicationFromTable(medication.id)}
-                                      variant="destructive"
-                                      size="sm"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    <div className="flex space-x-2">
+                                      <Button
+                                        type="button"
+                                        onClick={() => editMedicationInTable(medication)}
+                                        variant="outline"
+                                        size="sm"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        onClick={() => removeMedicationFromTable(medication.id)}
+                                        variant="destructive"
+                                        size="sm"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
                                   </td>
                                 </tr>
                               ))}
@@ -868,8 +1181,17 @@ export default function PatientRegistration() {
                 <Link href="/">Cancel</Link>
               </Button>
               <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                <UserPlus className="mr-2 h-4 w-4" />
-                {showPrescription && selectedDoctor ? "Register Patient & Create Prescription" : "Register Patient"}
+                {isEditMode ? (
+                  <>
+                    <Edit className="mr-2 h-4 w-4" />
+                    {showPrescription && selectedDoctor ? "Update Patient & Create Prescription" : "Update Patient"}
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    {showPrescription && selectedDoctor ? "Register Patient & Create Prescription" : "Register Patient"}
+                  </>
+                )}
               </Button>
             </div>
           </div>
