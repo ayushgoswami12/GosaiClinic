@@ -53,6 +53,8 @@ export default function PatientRegistration() {
   const router = useRouter()
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [patientId, setPatientId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -105,8 +107,54 @@ export default function PatientRegistration() {
   ]
 
   useEffect(() => {
+    // Get URL parameters
+    const searchParams = new URLSearchParams(window.location.search)
+    const id = searchParams.get('id')
+    
+    // Load patients from localStorage
     const patients = JSON.parse(localStorage.getItem("patients") || "[]")
     setTotalPatients(patients.length)
+    
+    // If ID parameter exists, load patient data for editing
+    if (id) {
+      setIsEditMode(true)
+      setPatientId(id)
+      
+      const patientToEdit = patients.find((p: PatientData) => p.id === id)
+      if (patientToEdit) {
+        setFormData({
+          firstName: patientToEdit.firstName || "",
+          lastName: patientToEdit.lastName || "",
+          age: patientToEdit.age || "",
+          gender: patientToEdit.gender || "",
+          phone: patientToEdit.phone || "",
+          address: patientToEdit.address || "",
+          bloodType: patientToEdit.bloodType || "",
+          allergies: patientToEdit.allergies || "",
+          medicalHistory: patientToEdit.medicalHistory || "",
+          dateOfVisit: new Date().toISOString().split("T")[0],
+        })
+        
+        // Load medications for this patient
+        const prescriptions = JSON.parse(localStorage.getItem("prescriptions") || "[]")
+        const patientPrescriptions = prescriptions.filter((p: Prescription) => p.patientId === id)
+        
+        if (patientPrescriptions.length > 0) {
+          // Use the most recent prescription's medications
+          const latestPrescription = patientPrescriptions.sort((a: Prescription, b: Prescription) => 
+            new Date(b.prescriptionDate).getTime() - new Date(a.prescriptionDate).getTime()
+          )[0]
+          
+          setMedicationTable(latestPrescription.medications || [])
+          setSelectedDoctor(latestPrescription.doctorName || "")
+          setDiagnosis(latestPrescription.diagnosis || "")
+          setInvestigation(latestPrescription.investigation || "")
+          setFee(latestPrescription.fee || "")
+          setPrescriptionNotes(latestPrescription.notes || "")
+          setShowPrescription(true)
+        }
+      }
+    }
   }, [])
 
   const addMedicationToTable = () => {
@@ -156,20 +204,41 @@ export default function PatientRegistration() {
     }
 
     try {
-      const newPatient: PatientData = {
-        id: `PAT-${Date.now()}`,
-        ...formData,
-        registrationDate: new Date().toLocaleString(),
-      }
-
+      // Get existing patients
       const existingPatients = JSON.parse(localStorage.getItem("patients") || "[]")
-      const updatedPatients = [...existingPatients, newPatient]
+      let updatedPatients = [...existingPatients]
+      let patientData: PatientData;
+      
+      if (isEditMode && patientId) {
+        // Update existing patient
+        patientData = {
+          id: patientId,
+          ...formData,
+          registrationDate: existingPatients.find((p: PatientData) => p.id === patientId)?.registrationDate || new Date().toLocaleString(),
+        }
+        
+        // Find and update the patient in the array
+        updatedPatients = existingPatients.map((p: PatientData) => 
+          p.id === patientId ? patientData : p
+        )
+      } else {
+        // Create new patient entry
+        patientData = {
+          id: `PAT-${Date.now()}`,
+          ...formData,
+          registrationDate: new Date().toLocaleString(),
+        }
+        
+        // Add new patient to array
+        updatedPatients = [...existingPatients, patientData]
+      }
+      
       localStorage.setItem("patients", JSON.stringify(updatedPatients))
 
       if (showPrescription && selectedDoctor) {
         const newPrescription: Prescription = {
           id: Date.now().toString(),
-          patientId: newPatient.id,
+          patientId: patientData.id,
           patientName: `${formData.firstName} ${formData.lastName}`,
           doctorName: selectedDoctor,
           medications: medicationTable,
@@ -191,10 +260,11 @@ export default function PatientRegistration() {
       setTotalPatients(updatedPatients.length)
       window.dispatchEvent(new CustomEvent("patientAdded"))
 
+      const actionText = isEditMode ? "updated" : "registered";
       const message =
         showPrescription && selectedDoctor
-          ? `Patient ${formData.firstName} ${formData.lastName} registered successfully with prescription! Total patients: ${updatedPatients.length}`
-          : `Patient ${formData.firstName} ${formData.lastName} registered successfully! Total patients: ${updatedPatients.length}`
+          ? `Patient ${formData.firstName} ${formData.lastName} ${actionText} successfully with prescription! Total patients: ${updatedPatients.length}`
+          : `Patient ${formData.firstName} ${formData.lastName} ${actionText} successfully! Total patients: ${updatedPatients.length}`
 
       setSuccessMessage(message)
       setShowSuccessPopup(true)
@@ -203,10 +273,10 @@ export default function PatientRegistration() {
         router.push("/patients")
       }, 2000)
 
-      console.log("New patient registered:", newPatient)
+      console.log(isEditMode ? "Patient updated:" : "New patient registered:", patientData)
     } catch (error) {
       console.error("Error saving patient data:", error)
-      alert("There was an error registering the patient. Please try again.")
+      alert(`There was an error ${isEditMode ? "updating" : "registering"} the patient. Please try again.`)
     }
   }
 

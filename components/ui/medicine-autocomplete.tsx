@@ -113,10 +113,21 @@ export function MedicineAutocomplete({
     const handlePrescriptionAdded = () => {
       loadSuggestions()
     }
+    
+    // Listen for patient updates (for edit mode)
+    const handlePatientAdded = () => {
+      loadSuggestions()
+    }
 
     window.addEventListener("prescriptionAdded", handlePrescriptionAdded)
+    window.addEventListener("patientAdded", handlePatientAdded)
+    
+    // Force immediate refresh when component mounts
+    loadSuggestions()
+    
     return () => {
       window.removeEventListener("prescriptionAdded", handlePrescriptionAdded)
+      window.removeEventListener("patientAdded", handlePatientAdded)
     }
   }, [])
 

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Navigation } from "@/components/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import Link from "next/link"
 import {
   Search,
   Filter,
@@ -346,11 +347,17 @@ export default function PatientsPage() {
   const generatePrintHTML = () => {
     if (!selectedPatient) return ""
 
-    const prescriptionGroups: Array<{ prescription: Prescription; medications: Medication[] }> = []
+    // Consolidate all medications into a single array
+    const allMedications: Medication[] = []
+    const latestPrescription = selectedPatientMedications.length > 0 ? selectedPatientMedications[selectedPatientMedications.length - 1] : null
+    
+    // Add all medications from all prescriptions to a single array
     selectedPatientMedications.forEach((prescription) => {
-      prescriptionGroups.push({
-        prescription,
-        medications: prescription.medications,
+      prescription.medications.forEach(medication => {
+        // Check if medication already exists to avoid duplicates
+        if (!allMedications.some(med => med.name === medication.name && med.dose === medication.dose)) {
+          allMedications.push(medication)
+        }
       })
     })
 
@@ -734,39 +741,27 @@ export default function PatientsPage() {
     <div class="medications-section">
         <div class="section-title">Prescribed Medications</div>
         
-        ${
-          prescriptionGroups.length > 0
-            ? prescriptionGroups
-                .map(
-                  (group, index) => `
-            ${
-              group.prescription.diagnosis
-                ? `
+        ${latestPrescription ? `
+            ${latestPrescription.diagnosis ? `
             <div class="diagnosis-section">
                 <span class="diagnosis-title">Diagnosis:</span>
-                <span class="diagnosis-content">${group.prescription.diagnosis}</span>
+                <span class="diagnosis-content">${latestPrescription.diagnosis}</span>
             </div>
-            `
-                : ""
-            }
+            ` : ""}
             
             <div class="prescription-info">
                 <div class="doctor-info">
-                    <span class="doctor-name">Dr. ${group.prescription.doctorName || "Not Specified"}</span>
-                    <span class="prescription-date">Prescribed: ${group.prescription.prescriptionDate || "Date not specified"}</span>
+                    <span class="doctor-name">Dr. ${latestPrescription.doctorName || "Not Specified"}</span>
+                    <span class="prescription-date">Prescribed: ${latestPrescription.prescriptionDate || "Date not specified"}</span>
                 </div>
             </div>
             
-            ${
-              group.prescription.investigation
-                ? `
+            ${latestPrescription.investigation ? `
             <div class="diagnosis-section" style="background: #f0fdf4; border-color: #22c55e; padding: 12px 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                 <span class="diagnosis-title" style="color: #15803d; font-size: 9pt; margin-right: 8px;">Investigation:</span>
-                <span class="diagnosis-content" style="color: #166534; font-size: 9pt;">${group.prescription.investigation}</span>
+                <span class="diagnosis-content" style="color: #166534; font-size: 9pt;">${latestPrescription.investigation}</span>
             </div>
-            `
-                : ""
-            }
+            ` : ""}
             
             <table class="medication-table">
                 <thead>
@@ -778,9 +773,8 @@ export default function PatientsPage() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${group.medications
-                      .map(
-                        (medication, medIndex) => `
+                    ${allMedications.length > 0 ? 
+                      allMedications.map((medication, medIndex) => `
                         <tr>
                             <td style="text-align: center;">${medIndex + 1}</td>
                             <td>
@@ -793,44 +787,30 @@ export default function PatientsPage() {
                                 <div class="medication-qty">${medication.qty || "As needed"}</div>
                             </td>
                         </tr>
-                    `,
-                      )
-                      .join("")}
-                    </tbody>
-                </table>
+                    `).join("") : 
+                    `<tr><td colspan="4" style="text-align: center; padding: 10px;">No medications found</td></tr>`}
+                </tbody>
+            </table>
                 
-                ${
-                  group.prescription.fee
-                    ? `
-                <div class="fee-section">
-                    <span class="diagnosis-title" style="color: #92400e;">Consultation Fee:</span>
-                    <span class="diagnosis-content" style="color: #92400e; font-weight: 600;">₹${group.prescription.fee}</span>
-                </div>
-                `
-                    : ""
-                }
-                
-                ${
-                  group.prescription.notes
-                    ? `
-                <div class="diagnosis-section" style="background: #f3f4f6; border-color: #6b7280;">
-                    <span class="diagnosis-title" style="color: #374151;">Notes:</span>
-                    <span class="diagnosis-content" style="color: #4b5563;">${group.prescription.notes}</span>
-                </div>
-                `
-                    : ""
-                }
+            ${latestPrescription.fee ? `
+            <div class="fee-section">
+                <span class="diagnosis-title" style="color: #92400e;">Consultation Fee:</span>
+                <span class="diagnosis-content" style="color: #92400e; font-weight: 600;">₹${latestPrescription.fee}</span>
             </div>
-        `,
-                )
-                .join("")
-            : `
+            ` : ""}
+                
+            ${latestPrescription.notes ? `
+            <div class="diagnosis-section" style="background: #f3f4f6; border-color: #6b7280;">
+                <span class="diagnosis-title" style="color: #374151;">Notes:</span>
+                <span class="diagnosis-content" style="color: #4b5563;">${latestPrescription.notes}</span>
+            </div>
+            ` : ""}
+        ` : `
             <div class="no-medications" style="text-align: center; padding: 15px; color: #6b7280; font-style: italic; font-size: 9pt; border: 1px dashed #e2e8f0; border-radius: 6px; margin: 10px 0;">
                 <div>No medications prescribed for this patient</div>
                 <div style="font-size: 9pt; margin-top: 5px; color: #9ca3af;">Please consult with the doctor for medical advice</div>
             </div>
-        `
-        }
+        `}
     </div>
     
     <div class="page-footer">
@@ -981,19 +961,12 @@ export default function PatientsPage() {
                                 size="sm"
                                 variant="outline"
                                 className="flex-1 lg:flex-none bg-transparent"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  startEdit(patient)
-                                  if (window.innerWidth < 1024) {
-                                    const detailsCard = document.querySelector(".lg\\:col-span-1 .card")
-                                    if (detailsCard) {
-                                      ;(detailsCard as HTMLElement).scrollIntoView({ behavior: "smooth" })
-                                    }
-                                  }
-                                }}
+                                asChild
                               >
-                                <Edit className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
-                                <span className="text-xs lg:text-sm">Edit</span>
+                                <Link href={`/patients/register?id=${patient.id}`}>
+                                  <Edit className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
+                                  <span className="text-xs lg:text-sm">Edit</span>
+                                </Link>
                               </Button>
                               <Button
                                 size="sm"
@@ -1103,10 +1076,12 @@ export default function PatientsPage() {
                           <Button
                             variant="outline"
                             className="w-full bg-transparent dark:bg-transparent h-8 sm:h-9 text-xs sm:text-sm"
-                            onClick={() => startEdit(selectedPatient)}
+                            asChild
                           >
-                            <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                            Update Information
+                            <Link href={`/patients/register?id=${selectedPatient.id}`}>
+                              <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                              Update Information
+                            </Link>
                           </Button>
                           <Button
                             variant="secondary"
