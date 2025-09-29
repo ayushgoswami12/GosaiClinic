@@ -26,6 +26,7 @@ interface PatientData {
   medicalHistory: string
   dateOfVisit: string
   registrationDate: string
+  images?: string[] // newly added to store uploaded report images (base64 data URLs)
 }
 
 interface MedicationEntry {
@@ -85,6 +86,7 @@ export default function PatientRegistration() {
   })
   const [customDose, setCustomDose] = useState("")
   const [isTranslating, setIsTranslating] = useState(false)
+  const [images, setImages] = useState<string[]>([]) // images state for uploaded patient images
 
   const doctors = ["Dr. Tansukh Gosai", "Dr. Devang Gosai", "Dr. Dhara Gosai"]
 
@@ -93,7 +95,6 @@ export default function PatientRegistration() {
     "સવારે જમીને",
     "સવાર સાંજ ભૂખ્યા પેટે",
     "સવાર બપોરે સાંજ ભૂખ્યા પેટે",
-
 
     "બપોરે ભૂખ્યા પેટે",
     "બપોરે જમીને",
@@ -109,17 +110,17 @@ export default function PatientRegistration() {
   useEffect(() => {
     // Get URL parameters
     const searchParams = new URLSearchParams(window.location.search)
-    const id = searchParams.get('id')
-    
+    const id = searchParams.get("id")
+
     // Load patients from localStorage
     const patients = JSON.parse(localStorage.getItem("patients") || "[]")
     setTotalPatients(patients.length)
-    
+
     // If ID parameter exists, load patient data for editing
     if (id) {
       setIsEditMode(true)
       setPatientId(id)
-      
+
       const patientToEdit = patients.find((p: PatientData) => p.id === id)
       if (patientToEdit) {
         setFormData({
@@ -134,17 +135,18 @@ export default function PatientRegistration() {
           medicalHistory: patientToEdit.medicalHistory || "",
           dateOfVisit: new Date().toISOString().split("T")[0],
         })
-        
+
         // Load medications for this patient
         const prescriptions = JSON.parse(localStorage.getItem("prescriptions") || "[]")
         const patientPrescriptions = prescriptions.filter((p: Prescription) => p.patientId === id)
-        
+
         if (patientPrescriptions.length > 0) {
           // Use the most recent prescription's medications
-          const latestPrescription = patientPrescriptions.sort((a: Prescription, b: Prescription) => 
-            new Date(b.prescriptionDate).getTime() - new Date(a.prescriptionDate).getTime()
+          const latestPrescription = patientPrescriptions.sort(
+            (a: Prescription, b: Prescription) =>
+              new Date(b.prescriptionDate).getTime() - new Date(a.prescriptionDate).getTime(),
           )[0]
-          
+
           setMedicationTable(latestPrescription.medications || [])
           setSelectedDoctor(latestPrescription.doctorName || "")
           setDiagnosis(latestPrescription.diagnosis || "")
@@ -152,6 +154,11 @@ export default function PatientRegistration() {
           setFee(latestPrescription.fee || "")
           setPrescriptionNotes(latestPrescription.notes || "")
           setShowPrescription(true)
+        }
+
+        // Load images when editing an existing patient
+        if (Array.isArray((patientToEdit as any).images)) {
+          setImages((patientToEdit as any).images)
         }
       }
     }
@@ -181,6 +188,54 @@ export default function PatientRegistration() {
     setMedicationTable(medicationTable.filter((med) => med.id !== id))
   }
 
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+
+  const downscaleDataUrl = (dataUrl: string, maxW = 1600, maxH = 1600, quality = 0.85): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const img = new Image()
+      img.crossOrigin = "anonymous" // important for canvas drawImage in print contexts
+      img.onload = () => {
+        const { width, height } = img
+        const scale = Math.min(maxW / width, maxH / height, 1)
+        const canvas = document.createElement("canvas")
+        canvas.width = Math.round(width * scale)
+        canvas.height = Math.round(height * scale)
+        const ctx = canvas.getContext("2d")
+        if (!ctx) return resolve(dataUrl)
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        // Normalize to JPEG to reduce size
+        const out = canvas.toDataURL("image/jpeg", quality)
+        resolve(out)
+      }
+      img.onerror = reject
+      img.src = dataUrl
+    })
+
+  const handleFilesSelected = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    const processed: string[] = []
+    for (const f of Array.from(files)) {
+      try {
+        const raw = await fileToDataUrl(f)
+        const small = await downscaleDataUrl(raw)
+        processed.push(small)
+      } catch (e) {
+        console.error("[v0] Failed to process image:", e)
+      }
+    }
+    setImages((prev) => [...prev, ...processed])
+  }
+
+  const removeImageAt = (idx: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== idx))
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const requiredFields = ["firstName", "lastName", "age", "gender", "phone", "address"]
@@ -207,32 +262,34 @@ export default function PatientRegistration() {
       // Get existing patients
       const existingPatients = JSON.parse(localStorage.getItem("patients") || "[]")
       let updatedPatients = [...existingPatients]
-      let patientData: PatientData;
-      
+      let patientData: PatientData
+
       if (isEditMode && patientId) {
         // Update existing patient
         patientData = {
           id: patientId,
           ...formData,
-          registrationDate: existingPatients.find((p: PatientData) => p.id === patientId)?.registrationDate || new Date().toLocaleString(),
+          registrationDate:
+            existingPatients.find((p: PatientData) => p.id === patientId)?.registrationDate ||
+            new Date().toLocaleString(),
+          images, // persist images on update
         }
-        
+
         // Find and update the patient in the array
-        updatedPatients = existingPatients.map((p: PatientData) => 
-          p.id === patientId ? patientData : p
-        )
+        updatedPatients = existingPatients.map((p: PatientData) => (p.id === patientId ? patientData : p))
       } else {
         // Create new patient entry
         patientData = {
           id: `PAT-${Date.now()}`,
           ...formData,
           registrationDate: new Date().toLocaleString(),
+          images, // persist images on create
         }
-        
+
         // Add new patient to array
         updatedPatients = [...existingPatients, patientData]
       }
-      
+
       localStorage.setItem("patients", JSON.stringify(updatedPatients))
 
       if (showPrescription && selectedDoctor) {
@@ -260,7 +317,7 @@ export default function PatientRegistration() {
       setTotalPatients(updatedPatients.length)
       window.dispatchEvent(new CustomEvent("patientAdded"))
 
-      const actionText = isEditMode ? "updated" : "registered";
+      const actionText = isEditMode ? "updated" : "registered"
       const message =
         showPrescription && selectedDoctor
           ? `Patient ${formData.firstName} ${formData.lastName} ${actionText} successfully with prescription! Total patients: ${updatedPatients.length}`
@@ -524,6 +581,63 @@ export default function PatientRegistration() {
                     onChange={(e) => handleInputChange("medicalHistory", e.target.value)}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Reports / Images (Optional)</CardTitle>
+                <CardDescription>
+                  Upload scans, X-rays or other images to store with this patient and include in printouts.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="patient-images">Upload Images</Label>
+                  <Input
+                    id="patient-images"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => handleFilesSelected(e.target.files)}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Images are stored securely in your browser and shown in Print/Print Preview. Large files are
+                    automatically resized for better performance.
+                  </p>
+                </div>
+
+                {images.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {images.map((src, idx) => (
+                      <div
+                        key={idx}
+                        className="relative rounded-md overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={src || "/placeholder.svg"}
+                          alt={`Patient report ${idx + 1}`}
+                          className="w-full h-40 object-cover"
+                          crossOrigin="anonymous"
+                        />
+                        <div className="absolute top-2 right-2">
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="destructive"
+                            onClick={() => removeImageAt(idx)}
+                            className="h-7 w-7"
+                            title="Remove image"
+                            aria-label="Remove image"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 

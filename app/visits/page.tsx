@@ -39,6 +39,7 @@ interface Patient {
   allergies: string
   medicalHistory: string
   registrationDate: string
+  images?: string[] // newly added
 }
 
 interface MedicationEntry {
@@ -430,6 +431,12 @@ export default function VisitsPage() {
 
     // Get patient details
     const patient = patients.find((p) => p.id === selectedVisitForPrint.patientId)
+    const patientImages: string[] = patient && Array.isArray((patient as any).images) ? (patient as any).images : []
+
+    const imagePages: string[][] = []
+    for (let i = 0; i < patientImages.length; i += 4) {
+      imagePages.push(patientImages.slice(i, i + 4))
+    }
 
     return `
 <!DOCTYPE html>
@@ -698,6 +705,50 @@ export default function VisitsPage() {
             margin-bottom: 10px;
             font-style: italic;
         }
+
+        /* images print styles: 2x2 grid, each group on a new page */
+        .images-section {
+          margin-top: 12px;
+        }
+
+        .images-title {
+          font-size: 12pt;
+          font-weight: bold;
+          color: #1f2937;
+          margin-bottom: 8px;
+          padding-bottom: 5px;
+          border-bottom: 2px solid #e5e7eb;
+          letter-spacing: -0.3px;
+        }
+
+        /* New 2-column grid to yield 4 images per page (2x2) */
+        .images-grid-4 {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+          page-break-inside: avoid;
+        }
+
+        .image-item {
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          padding: 6px;
+          background: #fff;
+          page-break-inside: avoid;
+        }
+
+        .image-item img {
+          width: 100%;
+          height: auto;
+          object-fit: contain;
+          border-radius: 4px;
+        }
+
+        /* Force images to start on a new page */
+        .images-break-page {
+          page-break-before: always;
+          break-before: page;
+        }
         
         @media print {
             body { 
@@ -716,6 +767,13 @@ export default function VisitsPage() {
             .medication-table { box-shadow: none; }
             .diagnosis-section { box-shadow: none; }
             .visit-info-section { box-shadow: none; }
+            /* ensure each images page starts on a new page and avoids breaking items */
+            .images-grid-4 { page-break-inside: avoid; }
+            .image-item { page-break-inside: avoid; }
+            .images-break-page {
+              page-break-before: always;
+              break-before: page;
+            }
         }
     </style>
 </head>
@@ -869,6 +927,35 @@ export default function VisitsPage() {
             : ""
         }
     </div>
+
+    
+    images rendered as 4-per-page on subsequent pages 
+    ${
+      imagePages.length > 0
+        ? `
+          ${imagePages
+            .map(
+              (page, pageIndex) => `
+            <div class="images-section images-break-page">
+              ${pageIndex === 0 ? `<div class="images-title">Attached Reports / Images</div>` : ``}
+              <div class="images-grid-4">
+                ${page
+                  .map(
+                    (src, i) => `
+                  <div class="image-item">
+                    <img src="${src}" alt="Patient report ${pageIndex * 4 + i + 1}" crossOrigin="anonymous" />
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+            </div>
+          `,
+            )
+            .join("")}
+        `
+        : ""
+    }
     
     ${
       selectedVisitForPrint.fee

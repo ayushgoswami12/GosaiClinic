@@ -40,6 +40,7 @@ interface Patient {
   allergies: string
   medicalHistory: string
   registrationDate: string
+  images?: string[] // newly added
 }
 
 interface Medication {
@@ -349,17 +350,27 @@ export default function PatientsPage() {
 
     // Consolidate all medications into a single array
     const allMedications: Medication[] = []
-    const latestPrescription = selectedPatientMedications.length > 0 ? selectedPatientMedications[selectedPatientMedications.length - 1] : null
-    
+    const latestPrescription =
+      selectedPatientMedications.length > 0 ? selectedPatientMedications[selectedPatientMedications.length - 1] : null
+
     // Add all medications from all prescriptions to a single array
     selectedPatientMedications.forEach((prescription) => {
-      prescription.medications.forEach(medication => {
+      prescription.medications.forEach((medication) => {
         // Check if medication already exists to avoid duplicates
-        if (!allMedications.some(med => med.name === medication.name && med.dose === medication.dose)) {
+        if (!allMedications.some((med) => med.name === medication.name && med.dose === medication.dose)) {
           allMedications.push(medication)
         }
       })
     })
+
+    const patientImages: string[] = Array.isArray((selectedPatient as any).images)
+      ? (selectedPatient as any).images
+      : []
+
+    const imagePages: string[][] = []
+    for (let i = 0; i < patientImages.length; i += 4) {
+      imagePages.push(patientImages.slice(i, i + 4))
+    }
 
     return `
 <!DOCTYPE html>
@@ -631,6 +642,50 @@ export default function PatientsPage() {
             margin-bottom: 10px;
             font-style: italic;
         }
+
+        /* images print styles: 2x2 grid, each group on a new page */
+        .images-section {
+          margin-top: 12px;
+        }
+
+        .images-title {
+          font-size: 12pt;
+          font-weight: bold;
+          color: #1f2937;
+          margin-bottom: 8px;
+          padding-bottom: 5px;
+          border-bottom: 2px solid #e5e7eb;
+          letter-spacing: -0.3px;
+        }
+
+        /* New 2-column grid to yield 4 images per page (2x2) */
+        .images-grid-4 {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+          page-break-inside: avoid;
+        }
+
+        .image-item {
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          padding: 6px;
+          background: #fff;
+          page-break-inside: avoid;
+        }
+
+        .image-item img {
+          width: 100%;
+          height: auto;
+          object-fit: contain;
+          border-radius: 4px;
+        }
+
+        /* Force images to start on a new page */
+        .images-break-page {
+          page-break-before: always;
+          break-before: page;
+        }
         
         @media print {
             body { 
@@ -649,6 +704,13 @@ export default function PatientsPage() {
             .medication-table { box-shadow: none; }
             .diagnosis-section { box-shadow: none; }
             .prescription-info { box-shadow: none; }
+            /* ensure each images page starts on a new page and avoids breaking items */
+            .images-grid-4 { page-break-inside: avoid; }
+            .image-item { page-break-inside: avoid; }
+            .images-break-page {
+              page-break-before: always;
+              break-before: page;
+            }
         }
     </style>
 </head>
@@ -741,13 +803,19 @@ export default function PatientsPage() {
     <div class="medications-section">
         <div class="section-title">Prescribed Medications</div>
         
-        ${latestPrescription ? `
-            ${latestPrescription.diagnosis ? `
+        ${
+          latestPrescription
+            ? `
+            ${
+              latestPrescription.diagnosis
+                ? `
             <div class="diagnosis-section">
                 <span class="diagnosis-title">Diagnosis:</span>
                 <span class="diagnosis-content">${latestPrescription.diagnosis}</span>
             </div>
-            ` : ""}
+            `
+                : ""
+            }
             
             <div class="prescription-info">
                 <div class="doctor-info">
@@ -756,12 +824,16 @@ export default function PatientsPage() {
                 </div>
             </div>
             
-            ${latestPrescription.investigation ? `
+            ${
+              latestPrescription.investigation
+                ? `
             <div class="diagnosis-section" style="background: #f0fdf4; border-color: #22c55e; padding: 12px 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                 <span class="diagnosis-title" style="color: #15803d; font-size: 9pt; margin-right: 8px;">Investigation:</span>
                 <span class="diagnosis-content" style="color: #166534; font-size: 9pt;">${latestPrescription.investigation}</span>
             </div>
-            ` : ""}
+            `
+                : ""
+            }
             
             <table class="medication-table">
                 <thead>
@@ -773,8 +845,11 @@ export default function PatientsPage() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${allMedications.length > 0 ? 
-                      allMedications.map((medication, medIndex) => `
+                    ${
+                      allMedications.length > 0
+                        ? allMedications
+                            .map(
+                              (medication, medIndex) => `
                         <tr>
                             <td style="text-align: center;">${medIndex + 1}</td>
                             <td>
@@ -787,32 +862,72 @@ export default function PatientsPage() {
                                 <div class="medication-qty">${medication.qty || "As needed"}</div>
                             </td>
                         </tr>
-                    `).join("") : 
-                    `<tr><td colspan="4" style="text-align: center; padding: 10px;">No medications found</td></tr>`}
+                    `,
+                            )
+                            .join("")
+                        : `<tr><td colspan="4" style="text-align: center; padding: 10px;">No medications found</td></tr>`
+                    }
                 </tbody>
             </table>
                 
-            ${latestPrescription.fee ? `
+            ${
+              latestPrescription.fee
+                ? `
             <div class="fee-section">
                 <span class="diagnosis-title" style="color: #92400e;">Consultation Fee:</span>
                 <span class="diagnosis-content" style="color: #92400e; font-weight: 600;">₹${latestPrescription.fee}</span>
             </div>
-            ` : ""}
+            `
+                : ""
+            }
                 
-            ${latestPrescription.notes ? `
+            ${
+              latestPrescription.notes
+                ? `
             <div class="diagnosis-section" style="background: #f3f4f6; border-color: #6b7280;">
                 <span class="diagnosis-title" style="color: #374151;">Notes:</span>
                 <span class="diagnosis-content" style="color: #4b5563;">${latestPrescription.notes}</span>
             </div>
-            ` : ""}
-        ` : `
+            `
+                : ""
+            }
+        `
+            : `
             <div class="no-medications" style="text-align: center; padding: 15px; color: #6b7280; font-style: italic; font-size: 9pt; border: 1px dashed #e2e8f0; border-radius: 6px; margin: 10px 0;">
                 <div>No medications prescribed for this patient</div>
                 <div style="font-size: 9pt; margin-top: 5px; color: #9ca3af;">Please consult with the doctor for medical advice</div>
             </div>
-        `}
+        `
+        }
     </div>
     
+    ${
+      imagePages.length > 0
+        ? `
+          ${imagePages
+            .map(
+              (page, pageIndex) => `
+            <div class="images-section images-break-page">
+              ${pageIndex === 0 ? `<div class="images-title">Attached Reports / Images</div>` : ``}
+              <div class="images-grid-4">
+                ${page
+                  .map(
+                    (src, i) => `
+                  <div class="image-item">
+                    <img src="${src}" alt="Patient report ${pageIndex * 4 + i + 1}" crossOrigin="anonymous" />
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+            </div>
+          `,
+            )
+            .join("")}
+        `
+        : ""
+    }
+
     <div class="page-footer">
         <div><strong>GOSAI CLINIC</strong> - Your Trusted Healthcare Partner</div>
         <div style="font-size: 8pt;">This is a computer-generated report. For queries, contact: 9426953220</div>

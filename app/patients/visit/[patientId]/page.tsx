@@ -178,31 +178,24 @@ export default function FullScreenVisitPage() {
     try {
       console.log("[v0] Starting translation for:", text)
 
-      const response = await fetch("https://google-translate1.p.rapidapi.com/language/translate/v2", {
+      const response = await fetch("/api/translate", {
         method: "POST",
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "Accept-Encoding": "application/gzip",
-          "X-RapidAPI-Key": process.env.NEXT_PUBLIC_RAPIDAPI_KEY || "your-rapidapi-key-here",
-          "X-RapidAPI-Host": "google-translate1.p.rapidapi.com",
+          "Content-Type": "application/json",
         },
-        body: new URLSearchParams({
-          q: text,
-          target: "gu",
-          source: "en",
-        }),
+        body: JSON.stringify({ text, source: "en", target: "gu" }),
+        cache: "no-store",
       })
+
+      if (!response.ok) {
+        throw new Error(`Upstream translation failed with status ${response.status}`)
+      }
 
       const data = await response.json()
       console.log("[v0] Translation response:", data)
 
-      if (data.data && data.data.translations && data.data.translations[0]) {
-        const translatedText = data.data.translations[0].translatedText
-        console.log("[v0] Translation successful:", translatedText)
-        return translatedText
-      } else {
-        throw new Error("Invalid response format")
-      }
+      const translatedText = data?.translatedText ?? ""
+      return translatedText
     } catch (error) {
       console.error("[v0] Translation error:", error)
 
