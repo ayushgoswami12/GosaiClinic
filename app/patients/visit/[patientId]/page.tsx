@@ -753,12 +753,15 @@ export default function FullScreenVisitPage() {
                       <div>
                         <strong>Doctor:</strong> {visitDoctor}
                         <br />
+<<<<<<< HEAD
                         {visitDiagnosis && (
                           <>
                             <strong>Diagnosis:</strong> {visitDiagnosis}
                             <br />
                           </>
                         )}
+=======
+>>>>>>> cb041d0 (Updated features and fixes)
                         {fee && (
                           <>
                             <strong>Fee:</strong> ₹{fee}

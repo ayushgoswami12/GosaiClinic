@@ -1,18 +1,25 @@
 "use client"
 
 import type React from "react"
+<<<<<<< HEAD
 
+=======
+>>>>>>> cb041d0 (Updated features and fixes)
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+<<<<<<< HEAD
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+=======
+>>>>>>> cb041d0 (Updated features and fixes)
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Stethoscope, Lock, User, AlertCircle, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+<<<<<<< HEAD
 
 // Mock user credentials for demo
 const mockUsers = [
@@ -23,24 +30,35 @@ const mockUsers = [
   { email: "nurse@gosaiclinic.com", password: "nurse123", role: "Nurse", name: "Nurse Jennifer Adams" },
   { email: "staff@gosaiclinic.com", password: "staff123", role: "Staff", name: "Reception Staff" },
 ]
+=======
+import { useAuth } from "@/app/lib/auth-context"
+>>>>>>> cb041d0 (Updated features and fixes)
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+<<<<<<< HEAD
     role: "",
     rememberMe: false,
+=======
+>>>>>>> cb041d0 (Updated features and fixes)
   })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+<<<<<<< HEAD
+=======
+  const { signIn } = useAuth()
+>>>>>>> cb041d0 (Updated features and fixes)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
+<<<<<<< HEAD
     // Simulate authentication delay
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
@@ -86,6 +104,19 @@ export default function LoginPage() {
   }
 
   const handleInputChange = (field: string, value: string | boolean) => {
+=======
+    try {
+      await signIn(formData.email, formData.password)
+      router.push("/patients")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed. Please check your credentials.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleInputChange = (field: string, value: string) => {
+>>>>>>> cb041d0 (Updated features and fixes)
     setFormData((prev) => ({ ...prev, [field]: value }))
     setError("")
   }
@@ -159,6 +190,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
+<<<<<<< HEAD
               <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
                 <Select value={formData.role} onValueChange={(value) => handleInputChange("role", value)}>
@@ -185,19 +217,27 @@ export default function LoginPage() {
                 </Label>
               </div>
 
+=======
+>>>>>>> cb041d0 (Updated features and fixes)
               <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
+<<<<<<< HEAD
               <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700">
                 Forgot your password?
+=======
+              <Link href="/auth/sign-up" className="text-sm text-blue-600 hover:text-blue-700">
+                Don't have an account? Sign up
+>>>>>>> cb041d0 (Updated features and fixes)
               </Link>
             </div>
           </CardContent>
         </Card>
 
+<<<<<<< HEAD
         {/* Demo Credentials */}
         <Card className="mt-6 bg-gray-50 dark:bg-gray-800">
           <CardHeader>
@@ -239,6 +279,11 @@ export default function LoginPage() {
               Support
             </Link>
           </div>
+=======
+        {/* Footer */}
+        <div className="text-center mt-8 text-sm text-gray-600 dark:text-gray-400">
+          <p>© 2025 GOSAI CLINIC. All rights reserved.</p>
+>>>>>>> cb041d0 (Updated features and fixes)
         </div>
       </div>
     </div>

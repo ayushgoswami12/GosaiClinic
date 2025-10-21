@@ -1,0 +1,4 @@
+1. The registered patient can be exported into excel (Name , Age , Gender , Place ,Ph no , Complain , Treatment
+
+2. All Patient registered (Print functionality should be working)
+3. All Patients are synced so that other devices can also show patients

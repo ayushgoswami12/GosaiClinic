@@ -7,7 +7,13 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Navigation } from "@/components/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+<<<<<<< HEAD
 import { Search, Filter, Users, Eye, Edit, Calendar, FileText, Phone, Mail, MapPin } from "lucide-react"
+=======
+import { Search, Filter, Users, Eye, Edit, Calendar, FileText, Phone, Mail, MapPin, Trash2 } from "lucide-react"
+import { DeletePatientDialog } from "@/components/delete-patient-dialog"
+import { usePatients } from "@/app/hooks/use-patients"
+>>>>>>> cb041d0 (Updated features and fixes)
 
 // Extended mock patient data
 const mockPatients = [
@@ -87,6 +93,12 @@ export default function DoctorPatients() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedPatient, setSelectedPatient] = useState<(typeof mockPatients)[0] | null>(null)
+<<<<<<< HEAD
+=======
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [patientToDelete, setPatientToDelete] = useState<(typeof mockPatients)[0] | null>(null)
+  const { deletePatient } = usePatients()
+>>>>>>> cb041d0 (Updated features and fixes)
 
   const filteredPatients = mockPatients.filter((patient) => {
     const matchesSearch =
@@ -109,6 +121,20 @@ export default function DoctorPatients() {
     }
   }
 
+<<<<<<< HEAD
+=======
+  const handleDeletePatient = async () => {
+    if (!patientToDelete) return
+    try {
+      await deletePatient(patientToDelete.id.toString())
+      setSelectedPatient(null)
+      setPatientToDelete(null)
+    } catch (error) {
+      console.error("Failed to delete patient:", error)
+    }
+  }
+
+>>>>>>> cb041d0 (Updated features and fixes)
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
@@ -198,6 +224,22 @@ export default function DoctorPatients() {
                             <Edit className="h-4 w-4 mr-2" />
                             Edit
                           </Button>
+<<<<<<< HEAD
+=======
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setPatientToDelete(patient)
+                              setDeleteDialogOpen(true)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </Button>
+>>>>>>> cb041d0 (Updated features and fixes)
                         </div>
                       </div>
                     </div>
@@ -294,6 +336,20 @@ export default function DoctorPatients() {
                         <Edit className="h-4 w-4 mr-2" />
                         Update Information
                       </Button>
+<<<<<<< HEAD
+=======
+                      <Button
+                        variant="outline"
+                        className="w-full bg-transparent text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          setPatientToDelete(selectedPatient)
+                          setDeleteDialogOpen(true)
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Patient
+                      </Button>
+>>>>>>> cb041d0 (Updated features and fixes)
                     </div>
                   </div>
                 ) : (
@@ -307,6 +363,16 @@ export default function DoctorPatients() {
           </div>
         </div>
       </div>
+<<<<<<< HEAD
+=======
+
+      <DeletePatientDialog
+        isOpen={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeletePatient}
+        patientName={patientToDelete?.name || ""}
+      />
+>>>>>>> cb041d0 (Updated features and fixes)
     </div>
   )
 }
