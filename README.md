@@ -6,7 +6,7 @@ This is a [Next.js](https://nextjs.org) project for managing a medical clinic, i
 ## Important Development Rules
 
 1. **DO NOT modify the print/print preview format** unless specifically requested
-2. **DO NOT change the Excel export functionality** as it is working perfectly
+2. **DO NOT change the Excel export functionality** as it is working perfectly.
 
 ## Project Structure
 
