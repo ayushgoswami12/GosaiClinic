@@ -11,8 +11,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Navigation } from "@/components/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+<<<<<<< HEAD
 import { User, Calendar, Shield, Settings, Lock, Bell, Eye, EyeOff, Save, LogOut } from "lucide-react"
 import { useRouter } from "next/navigation"
+=======
+import { User, Calendar, Shield, Settings, Lock, Bell, Eye, EyeOff, Save, LogOut, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { DeleteAccountDialog } from "@/app/components/delete-account-dialog"
+>>>>>>> cb041d0 (Updated features and fixes)
 
 interface UserProfile {
   email: string
@@ -25,6 +31,10 @@ export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
+<<<<<<< HEAD
+=======
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+>>>>>>> cb041d0 (Updated features and fixes)
   const [profileData, setProfileData] = useState({
     name: "",
     email: "",
@@ -76,6 +86,31 @@ export default function ProfilePage() {
     router.push("/login")
   }
 
+<<<<<<< HEAD
+=======
+  const handleDeleteAccount = async () => {
+    try {
+      const response = await fetch("/api/auth/delete-user", {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+        return
+      }
+
+      // Clear local storage and redirect to login
+      localStorage.removeItem("hospitalUser")
+      setIsDeleteDialogOpen(false)
+      router.push("/login")
+    } catch (error) {
+      console.error("[v0] Delete account error:", error)
+      alert("Failed to delete account. Please try again.")
+    }
+  }
+
+>>>>>>> cb041d0 (Updated features and fixes)
   const handleProfileUpdate = (e: React.FormEvent) => {
     e.preventDefault()
     alert("Profile updated successfully! (Demo)")
@@ -326,6 +361,23 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
+<<<<<<< HEAD
+=======
+
+                <div className="mt-8 pt-6 border-t border-red-200 bg-red-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-red-900 mb-2 flex items-center space-x-2">
+                    <Trash2 className="h-4 w-4" />
+                    <span>Danger Zone</span>
+                  </h3>
+                  <p className="text-sm text-red-800 mb-4">
+                    Permanently delete your account and all associated data. This action cannot be undone.
+                  </p>
+                  <Button onClick={() => setIsDeleteDialogOpen(true)} className="bg-red-600 hover:bg-red-700">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Account
+                  </Button>
+                </div>
+>>>>>>> cb041d0 (Updated features and fixes)
               </CardContent>
             </Card>
           </TabsContent>
@@ -445,6 +497,18 @@ export default function ProfilePage() {
             </Card>
           </TabsContent>
         </Tabs>
+<<<<<<< HEAD
+=======
+
+        {user && (
+          <DeleteAccountDialog
+            isOpen={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+            onConfirm={handleDeleteAccount}
+            userEmail={user.email}
+          />
+        )}
+>>>>>>> cb041d0 (Updated features and fixes)
       </div>
     </div>
   )
