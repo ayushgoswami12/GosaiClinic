@@ -1,0 +1,296 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.08 0.005 240);
+  --foreground: oklch(0.95 0.005 240);
+  --card: oklch(0.12 0.005 240);
+  --card-foreground: oklch(0.95 0.005 240);
+  --popover: oklch(0.12 0.005 240);
+  --popover-foreground: oklch(0.95 0.005 240);
+  --primary: oklch(0.6 0.15 240);
+  --primary-foreground: oklch(0.98 0.005 240);
+  --secondary: oklch(0.18 0.005 240);
+  --secondary-foreground: oklch(0.9 0.005 240);
+  --muted: oklch(0.18 0.005 240);
+  --muted-foreground: oklch(0.65 0.005 240);
+  --accent: oklch(0.18 0.005 240);
+  --accent-foreground: oklch(0.9 0.005 240);
+  --destructive: oklch(0.45 0.15 25);
+  --destructive-foreground: oklch(0.95 0.005 240);
+  --border: oklch(0.22 0.005 240);
+  --input: oklch(0.18 0.005 240);
+  --ring: oklch(0.6 0.15 240);
+  --chart-1: oklch(0.55 0.15 240);
+  --chart-2: oklch(0.65 0.12 180);
+  --chart-3: oklch(0.7 0.15 60);
+  --chart-4: oklch(0.6 0.15 300);
+  --chart-5: oklch(0.65 0.15 20);
+  --sidebar: oklch(0.15 0.005 240);
+  --sidebar-foreground: oklch(0.95 0.005 240);
+  --sidebar-primary: oklch(0.6 0.15 240);
+  --sidebar-primary-foreground: oklch(0.98 0.005 240);
+  --sidebar-accent: oklch(0.18 0.005 240);
+  --sidebar-accent-foreground: oklch(0.9 0.005 240);
+  --sidebar-border: oklch(0.22 0.005 240);
+  --sidebar-ring: oklch(0.6 0.15 240);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Enhanced dark mode styling */
+.dark {
+  /* Improved shadows for dark mode */
+  --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);
+
+  /* Better focus states */
+  --tw-ring-color: oklch(0.6 0.15 240 / 0.5);
+}
+
+/* Dark mode card improvements */
+.dark .card {
+  background: linear-gradient(135deg, oklch(0.12 0.005 240), oklch(0.15 0.005 240));
+  border: 1px solid oklch(0.22 0.005 240);
+}
+
+/* Dark mode button improvements */
+.dark .btn-primary {
+  background: linear-gradient(135deg, oklch(0.6 0.15 240), oklch(0.55 0.15 240));
+  border: 1px solid oklch(0.65 0.15 240);
+}
+
+/* Dark mode input improvements */
+.dark input,
+.dark textarea,
+.dark select {
+  background: oklch(0.18 0.005 240);
+  border: 1px solid oklch(0.25 0.005 240);
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: oklch(0.6 0.15 240);
+  box-shadow: 0 0 0 2px oklch(0.6 0.15 240 / 0.2);
+}
+
+/* Dark mode navigation improvements */
+.dark nav {
+  background: linear-gradient(180deg, oklch(0.15 0.005 240), oklch(0.12 0.005 240));
+  border-bottom: 1px solid oklch(0.22 0.005 240);
+}
+
+/* Dark mode sidebar improvements */
+.dark .sidebar {
+  background: linear-gradient(180deg, oklch(0.15 0.005 240), oklch(0.12 0.005 240));
+  border-right: 1px solid oklch(0.22 0.005 240);
+}
+
+/* Enhanced print styles for better document formatting */
+@media print {
+  /* Hide everything by default (no layout space) */
+  body * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Only show the active print section */
+  .active-print {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    transform: none !important;
+  }
+  .active-print * {
+    display: unset !important;
+    visibility: visible !important;
+  }
+
+  /* Modern A4 centered layout with better spacing */
+  @page {
+    size: A4;
+    margin: 8mm;
+  }
+
+  .active-print {
+    max-width: 210mm;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color: #111 !important;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    line-height: 1.4 !important;
+    font-size: 12pt !important;
+  }
+
+  /* Enhanced typography for print */
+  .active-print h1 {
+    font-size: 32pt !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.02em !important;
+    margin-bottom: 8pt !important;
+  }
+  .active-print h2 {
+    font-size: 22pt !important;
+    font-weight: 700 !important;
+    margin-bottom: 6pt !important;
+  }
+  .active-print h3 {
+    font-size: 18pt !important;
+    font-weight: 700 !important;
+    margin-bottom: 4pt !important;
+  }
+  .active-print p,
+  .active-print li,
+  .active-print td {
+    font-size: 12pt !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Enhanced table styling for print */
+  .active-print table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 8pt 0 !important;
+    page-break-inside: avoid !important;
+  }
+  .active-print th,
+  .active-print td {
+    border: 1px solid #333 !important;
+    padding: 6pt 8pt !important;
+    text-align: left !important;
+    vertical-align: top !important;
+  }
+  .active-print th {
+    background: #f0f0f0 !important;
+    font-weight: 700 !important;
+  }
+
+  /* Enhanced section styling */
+  .active-print .print-patient-info,
+  .active-print .print-prescription {
+    border: 1px solid #333 !important;
+    border-radius: 4pt !important;
+    padding: 8pt !important;
+    margin-bottom: 8pt !important;
+    page-break-inside: avoid !important;
+    background: #fafafa !important;
+  }
+
+  .active-print .print-prescription .print-medication {
+    border: 1px dashed #666 !important;
+    border-radius: 3pt !important;
+    padding: 6pt !important;
+    margin: 4pt 0 !important;
+    background: white !important;
+  }
+
+  /* Page break controls */
+  .active-print .page-break {
+    page-break-before: always !important;
+  }
+
+  .active-print .no-page-break {
+    page-break-inside: avoid !important;
+  }
+
+  /* Explicitly hide elements marked as no-print */
+  .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Enhanced color preservation */
+  .active-print * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
