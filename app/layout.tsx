@@ -5,10 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Inter } from "next/font/google"
-<<<<<<< HEAD
-=======
 import { AuthProvider } from "@/app/lib/auth-context"
->>>>>>> cb041d0 (Updated features and fixes)
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -23,14 +20,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-<<<<<<< HEAD
-  themeColor: [{ media: "(prefers-color-scheme: light)", color: "white" }, { media: "(prefers-color-scheme: dark)", color: "#0f172a" }]
-=======
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "white" },
     { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
   ],
->>>>>>> cb041d0 (Updated features and fixes)
 }
 
 export default function RootLayout({
@@ -55,11 +48,7 @@ html {
       </head>
       <body className={`${inter.className} min-h-screen antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-<<<<<<< HEAD
-          {children}
-=======
           <AuthProvider>{children}</AuthProvider>
->>>>>>> cb041d0 (Updated features and fixes)
         </ThemeProvider>
       </body>
     </html>

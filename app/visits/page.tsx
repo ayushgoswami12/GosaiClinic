@@ -843,13 +843,10 @@ export default function VisitsPage() {
     <div class="visit-info-section">
         <div class="section-title">Visit Information</div>
         <div class="info-grid">
-<<<<<<< HEAD
             <div class="info-item">
                 <div class="info-label">Diagnosis</div>
                 <div class="info-content">${selectedVisitForPrint.diagnosis || "Not specified"}</div>
             </div>
-=======
->>>>>>> cb041d0 (Updated features and fixes)
             ${
               selectedVisitForPrint.followUpDate
                 ? `

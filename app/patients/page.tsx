@@ -26,14 +26,10 @@ import {
   ClipboardList,
   FileText,
   FilePlus,
-<<<<<<< HEAD
-} from "lucide-react"
-=======
   Trash2,
 } from "lucide-react"
 import { DeletePatientDialog } from "@/components/delete-patient-dialog"
 import { usePatients } from "@/app/hooks/use-patients"
->>>>>>> cb041d0 (Updated features and fixes)
 
 interface Patient {
   id: string
@@ -82,12 +78,9 @@ export default function PatientsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState<Patient | null>(null)
   const [showPrintPreview, setShowPrintPreview] = useState(false)
-<<<<<<< HEAD
-=======
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null)
   const { deletePatient } = usePatients()
->>>>>>> cb041d0 (Updated features and fixes)
 
   const loadPatients = () => {
     const storedPatients = localStorage.getItem("patients")
@@ -336,8 +329,6 @@ export default function PatientsPage() {
     return []
   }
 
-<<<<<<< HEAD
-=======
   const handleDeletePatient = async () => {
     if (!patientToDelete) return
     try {
@@ -367,7 +358,6 @@ export default function PatientsPage() {
     }
   }
 
->>>>>>> cb041d0 (Updated features and fixes)
   const handlePrintPatient = (patient: Patient) => {
     setSelectedPatient(patient)
     const medications = getMedicationsForPatient(patient.id)
@@ -763,28 +753,14 @@ export default function PatientsPage() {
     <div class="clinic-header">
         <div class="clinic-branding">
             <div class="clinic-title">GOSAI CLINIC</div>
-<<<<<<< HEAD
-=======
-        
-                    <span class="doctor-name"> ${latestPrescription.doctorName || "Not Specified"}</span>
-                    <span class="prescription-date">Prescribed: ${latestPrescription.prescriptionDate || "Date not specified"}</span>
-                
->>>>>>> cb041d0 (Updated features and fixes)
             <div class="clinic-subtitle">Complete Healthcare Solutions</div>
         </div>
         <div class="clinic-contact">
             <div>📍 Opp. Taluka Panchayat, Shiv Nagar, Bhanvad, Gujarat 360510</div>
             <div>📞 9426953220</div>
         </div>
-<<<<<<< HEAD
     </div>
     
-=======
-        
-    </div>
-    
-    
->>>>>>> cb041d0 (Updated features and fixes)
     <div class="print-date">
         Generated: ${new Date().toLocaleDateString("en-US", {
           year: "numeric",
@@ -836,7 +812,6 @@ export default function PatientsPage() {
         </div>
     </div>
         
-<<<<<<< HEAD
     ${
       selectedPatient.allergies
         ? `
@@ -858,8 +833,6 @@ export default function PatientsPage() {
     `
         : ""
     }
-=======
->>>>>>> cb041d0 (Updated features and fixes)
     </div>
     
     <div class="medications-section">
@@ -868,7 +841,6 @@ export default function PatientsPage() {
         ${
           latestPrescription
             ? `
-<<<<<<< HEAD
             ${
               latestPrescription.diagnosis
                 ? `
@@ -883,12 +855,6 @@ export default function PatientsPage() {
             <div class="prescription-info">
                 <div class="doctor-info">
                     <span class="doctor-name">Dr. ${latestPrescription.doctorName || "Not Specified"}</span>
-=======
-            
-            <div class="prescription-info">
-                <div class="doctor-info">
-                    <span class="doctor-name"> ${latestPrescription.doctorName || "Not Specified"}</span>
->>>>>>> cb041d0 (Updated features and fixes)
                     <span class="prescription-date">Prescribed: ${latestPrescription.prescriptionDate || "Date not specified"}</span>
                 </div>
             </div>
@@ -1001,13 +967,7 @@ export default function PatientsPage() {
         <div><strong>GOSAI CLINIC</strong> - Your Trusted Healthcare Partner</div>
         <div style="font-size: 8pt;">This is a computer-generated report. For queries, contact: 9426953220</div>
         <div style="font-size: 8pt;">Report ID: ${selectedPatient.id}-${Date.now()}</div>
-<<<<<<< HEAD
     </div>
-=======
-        
-    </div>
-    
->>>>>>> cb041d0 (Updated features and fixes)
 </body>
 </html>`
   }
@@ -1170,8 +1130,6 @@ export default function PatientsPage() {
                                 <Pill className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
                                 <span className="text-xs lg:text-sm">Medication</span>
                               </Button>
-<<<<<<< HEAD
-=======
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -1185,7 +1143,6 @@ export default function PatientsPage() {
                                 <Trash2 className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
                                 <span className="text-xs lg:text-sm">Delete</span>
                               </Button>
->>>>>>> cb041d0 (Updated features and fixes)
                             </div>
                           </div>
                         </div>
@@ -1489,11 +1446,7 @@ export default function PatientsPage() {
                               </CardTitle>
                               <CardDescription className="dark:text-gray-300 mt-1 flex items-center">
                                 <User className="h-3.5 w-3.5 mr-1.5 text-gray-400 dark:text-gray-500" />
-<<<<<<< HEAD
                                 Dr. {prescription.doctorName}
-=======
-                                {prescription.doctorName}
->>>>>>> cb041d0 (Updated features and fixes)
                                 <span className="mx-2 text-gray-300 dark:text-gray-600">•</span>
                                 <Calendar className="h-3.5 w-3.5 mr-1.5 text-gray-400 dark:text-gray-500" />
                                 {new Date(prescription.date).toLocaleDateString()}
@@ -1646,8 +1599,6 @@ export default function PatientsPage() {
             </div>
           </div>
         )}
-<<<<<<< HEAD
-=======
 
         <DeletePatientDialog
           isOpen={deleteDialogOpen}
@@ -1659,7 +1610,6 @@ export default function PatientsPage() {
               : ""
           }
         />
->>>>>>> cb041d0 (Updated features and fixes)
       </div>
     </div>
   )

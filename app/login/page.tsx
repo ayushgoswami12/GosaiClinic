@@ -1,110 +1,33 @@
 "use client"
 
 import type React from "react"
-<<<<<<< HEAD
-
-=======
->>>>>>> cb041d0 (Updated features and fixes)
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-<<<<<<< HEAD
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-=======
->>>>>>> cb041d0 (Updated features and fixes)
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Stethoscope, Lock, User, AlertCircle, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-<<<<<<< HEAD
-
-// Mock user credentials for demo
-const mockUsers = [
-  { email: "admin@gosaiclinic.com", password: "admin123", role: "Administrator", name: "Clinic Admin" },
-  { email: "tansukh@gosaiclinic.com", password: "doctor123", role: "Doctor", name: "Dr. Tansukh Gosai" },
-  { email: "devang@gosaiclinic.com", password: "doctor123", role: "Doctor", name: "Dr. Devang Gosai" },
-  { email: "dhara@gosaiclinic.com", password: "doctor123", role: "Doctor", name: "Dr. Dhara Gosai" },
-  { email: "nurse@gosaiclinic.com", password: "nurse123", role: "Nurse", name: "Nurse Jennifer Adams" },
-  { email: "staff@gosaiclinic.com", password: "staff123", role: "Staff", name: "Reception Staff" },
-]
-=======
 import { useAuth } from "@/app/lib/auth-context"
->>>>>>> cb041d0 (Updated features and fixes)
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-<<<<<<< HEAD
-    role: "",
-    rememberMe: false,
-=======
->>>>>>> cb041d0 (Updated features and fixes)
   })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-<<<<<<< HEAD
-=======
   const { signIn } = useAuth()
->>>>>>> cb041d0 (Updated features and fixes)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
-<<<<<<< HEAD
-    // Simulate authentication delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Check credentials
-    const user = mockUsers.find(
-      (u) => u.email === formData.email && u.password === formData.password && u.role === formData.role,
-    )
-
-    if (user) {
-      // Store user session (in real app, use proper session management)
-      localStorage.setItem(
-        "hospitalUser",
-        JSON.stringify({
-          email: user.email,
-          role: user.role,
-          name: user.name,
-          loginTime: new Date().toISOString(),
-        }),
-      )
-
-      // Redirect based on role
-      switch (user.role) {
-        case "Administrator":
-          router.push("/admin")
-          break
-        case "Doctor":
-          router.push("/doctors")
-          break
-        case "Nurse":
-          router.push("/patients")
-          break
-        case "Staff":
-          router.push("/appointments")
-          break
-        default:
-          router.push("/")
-      }
-    } else {
-      setError("Invalid credentials. Please check your email, password, and role.")
-    }
-
-    setIsLoading(false)
-  }
-
-  const handleInputChange = (field: string, value: string | boolean) => {
-=======
     try {
       await signIn(formData.email, formData.password)
       router.push("/patients")
@@ -116,7 +39,6 @@ export default function LoginPage() {
   }
 
   const handleInputChange = (field: string, value: string) => {
->>>>>>> cb041d0 (Updated features and fixes)
     setFormData((prev) => ({ ...prev, [field]: value }))
     setError("")
   }
@@ -190,100 +112,22 @@ export default function LoginPage() {
                 </div>
               </div>
 
-<<<<<<< HEAD
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select value={formData.role} onValueChange={(value) => handleInputChange("role", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Administrator">Administrator</SelectItem>
-                    <SelectItem value="Doctor">Doctor</SelectItem>
-                    <SelectItem value="Nurse">Nurse</SelectItem>
-                    <SelectItem value="Staff">Staff</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="rememberMe"
-                  checked={formData.rememberMe}
-                  onCheckedChange={(checked) => handleInputChange("rememberMe", checked as boolean)}
-                />
-                <Label htmlFor="rememberMe" className="text-sm">
-                  Remember me
-                </Label>
-              </div>
-
-=======
->>>>>>> cb041d0 (Updated features and fixes)
               <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
-<<<<<<< HEAD
-              <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700">
-                Forgot your password?
-=======
               <Link href="/auth/sign-up" className="text-sm text-blue-600 hover:text-blue-700">
                 Don't have an account? Sign up
->>>>>>> cb041d0 (Updated features and fixes)
               </Link>
             </div>
           </CardContent>
         </Card>
 
-<<<<<<< HEAD
-        {/* Demo Credentials */}
-        <Card className="mt-6 bg-gray-50 dark:bg-gray-800">
-          <CardHeader>
-            <CardTitle className="text-sm dark:text-white">Demo Credentials</CardTitle>
-          </CardHeader>
-          <CardContent className="text-xs space-y-2 dark:text-gray-300">
-            <div>
-              <strong>Administrator:</strong> admin@gosaiclinic.com / admin123
-            </div>
-            <div>
-              <strong>Dr. Tansukh:</strong> tansukh@gosaiclinic.com / doctor123
-            </div>
-            <div>
-              <strong>Dr. Devang:</strong> devang@gosaiclinic.com / doctor123
-            </div>
-            <div>
-              <strong>Dr. Dhara:</strong> dhara@gosaiclinic.com / doctor123
-            </div>
-            <div>
-              <strong>Nurse:</strong> nurse@gosaiclinic.com / nurse123
-            </div>
-            <div>
-              <strong>Staff:</strong> staff@gosaiclinic.com / staff123
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Footer */}
-        <div className="text-center mt-8 text-sm text-gray-600 dark:text-gray-400">
-          <p>© 2024 GOSAI CLINIC. All rights reserved.</p>
-          <div className="flex justify-center space-x-4 mt-2">
-            <Link href="/privacy" className="hover:text-blue-600">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-blue-600">
-              Terms of Service
-            </Link>
-            <Link href="/support" className="hover:text-blue-600">
-              Support
-            </Link>
-          </div>
-=======
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-600 dark:text-gray-400">
           <p>© 2025 GOSAI CLINIC. All rights reserved.</p>
->>>>>>> cb041d0 (Updated features and fixes)
         </div>
       </div>
     </div>
