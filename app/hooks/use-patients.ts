@@ -103,9 +103,17 @@ export function usePatients() {
 
   const deletePatient = async (id: string) => {
     try {
-      const response = await fetch(`/api/patients/${id}`, { method: "DELETE" })
-      if (!response.ok) throw new Error("Failed to delete patient")
-      setPatients(patients.filter((p) => p.id !== id))
+      // Using only localStorage for patient deletion
+      const localPatients = JSON.parse(localStorage.getItem("patients") || "[]")
+      const updatedPatients = localPatients.filter((p: any) => p.id !== id)
+      localStorage.setItem("patients", JSON.stringify(updatedPatients))
+      
+      // Also delete related prescriptions
+      const localPrescriptions = JSON.parse(localStorage.getItem("prescriptions") || "[]")
+      const updatedPrescriptions = localPrescriptions.filter((p: any) => p.patientId !== id)
+      localStorage.setItem("prescriptions", JSON.stringify(updatedPrescriptions))
+      
+      setPatients(updatedPatients)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error")
       throw err

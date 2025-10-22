@@ -114,73 +114,60 @@ export default function PatientRegistration() {
     
     const fetchPatients = async () => {
       try {
-        // Use Supabase to fetch patients
-        const { createClient } = await import("@/app/lib/supabase/client")
-        const supabase = createClient()
+        // Use localStorage for patient data
+        const patientsString = localStorage.getItem('patients')
+        const patients = patientsString ? JSON.parse(patientsString) : []
         
-        // Get patient count using count parameter for better performance
-        const { count, error: countError } = await supabase
-          .from("patients")
-          .select("*", { count: 'exact', head: true })
-        
-        if (!countError) {
-          setTotalPatients(count || 0)
-        }
+        // Set total patients count
+        setTotalPatients(patients.length || 0)
         
         // If ID parameter exists, load patient data for editing
         if (id) {
           setIsEditMode(true)
           setPatientId(id)
           
-          const { data: patientToEdit, error: patientError } = await supabase
-            .from("patients")
-            .select("*")
-            .eq("id", id)
-            .single()
-            
-          if (patientError) {
-            console.error("Error fetching patient:", patientError)
+          // Find patient in local storage
+          const patientData = patients.find(patient => patient.id === id)
+          
+          if (!patientData) {
+            console.error("Patient not found in local storage")
             alert("Patient not found!")
             router.push("/patients")
             return
           }
           
-          if (patientToEdit) {
+          if (patientData) {
             setFormData({
-              firstName: patientToEdit.first_name || "",
-              lastName: patientToEdit.last_name || "",
-              age: patientToEdit.age?.toString() || "",
-              gender: patientToEdit.gender || "",
-              phone: patientToEdit.phone || "",
-              address: patientToEdit.address || "",
-              bloodType: patientToEdit.blood_type || "",
-              allergies: patientToEdit.allergies || "",
-              medicalHistory: patientToEdit.medical_history || "",
-              dateOfVisit: patientToEdit.date_of_visit || new Date().toISOString().split("T")[0],
+              firstName: patientData.firstName || "",
+              lastName: patientData.lastName || "",
+              age: patientData.age?.toString() || "",
+              gender: patientData.gender || "",
+              phone: patientData.phone || "",
+              address: patientData.address || "",
+              bloodType: patientData.bloodType || "",
+              allergies: patientData.allergies || "",
+              medicalHistory: patientData.medicalHistory || "",
+              dateOfVisit: patientData.dateOfVisit?.split("T")[0] || new Date().toISOString().split("T")[0],
             })
             
             // Load images when editing an existing patient
-            if (Array.isArray(patientToEdit.images)) {
-              setImages(patientToEdit.images)
+            if (Array.isArray(patientData.images)) {
+              setImages(patientData.images)
             }
             
-            // Load prescriptions for this patient
-            const { data: prescriptions, error: prescriptionsError } = await supabase
-              .from("prescriptions")
-              .select("*")
-              .eq("patient_id", id)
-              .order("prescription_date", { ascending: false })
-              .limit(1)
+            // Load prescriptions for this patient from localStorage
+            const prescriptionsString = localStorage.getItem('prescriptions')
+            const prescriptions = prescriptionsString ? JSON.parse(prescriptionsString) : []
+            const patientPrescriptions = prescriptions.filter((p: any) => p.patientId === id)
               
-            if (prescriptionsError) {
-              console.error("Error fetching prescriptions:", prescriptionsError)
-            }
-            
-            if (prescriptions && prescriptions.length > 0) {
-              const latestPrescription = prescriptions[0]
+            if (patientPrescriptions && patientPrescriptions.length > 0) {
+              // Sort by date to get the latest prescription
+              const latestPrescription = patientPrescriptions.sort((a: any, b: any) => 
+                new Date(b.prescriptionDate).getTime() - new Date(a.prescriptionDate).getTime()
+              )[0]
               
               setMedicationTable(latestPrescription.medications || [])
-              setSelectedDoctor(latestPrescription.doctor_name || "")
+              setSelectedDoctor(latestPrescription.doctorName || "")
               setDiagnosis(latestPrescription.diagnosis || "")
               setInvestigation(latestPrescription.investigation || "")
               setFee(latestPrescription.fee || "")
@@ -354,106 +341,8 @@ export default function PatientRegistration() {
         localStorage.setItem("prescriptions", JSON.stringify(prescriptions))
       }
       
-      // Try to also save to Supabase if available
-      try {
-        const { createClient } = await import("@/app/lib/supabase/client")
-        const supabase = createClient()
-        
-        // Prepare patient data for Supabase (using snake_case for column names)
-        const patientRecord = {
-          user_id: "public_user", // Use a default user ID since we're not requiring login
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          age: parseInt(formData.age),
-          gender: formData.gender,
-          phone: formData.phone,
-          address: formData.address,
-          blood_type: formData.bloodType,
-          allergies: formData.allergies,
-          medical_history: formData.medicalHistory,
-          date_of_visit: formData.dateOfVisit,
-          images: images
-        }
-        
-        // Attempt to save to Supabase
-        if (isEditMode && patientId) {
-          const { error: updateError } = await supabase
-            .from("patients")
-            .update(patientRecord)
-            .eq("id", patientId)
-          if (updateError) {
-            console.warn("Supabase update failed, using localStorage only:", updateError)
-            alert(`Cloud update failed: ${(updateError as any)?.message || updateError}. Data saved only on this device.`)
-          }
-        } else {
-          const { data: inserted, error: insertError } = await supabase
-            .from("patients")
-            .insert([patientRecord])
-            .select()
-            .single()
-          if (insertError) {
-            console.warn("Supabase insert failed, using localStorage only:", insertError)
-            alert(`Cloud save failed: ${(insertError as any)?.message || insertError}. Data saved only on this device.`)
-          } else if (inserted?.id) {
-            // Replace provisional id with Supabase UUID everywhere
-            const supabaseId = inserted.id
-            newPatientId = supabaseId
-            patientObject.id = supabaseId
-            // Update localStorage array to use new id for the just-added patient
-            const localPatients = JSON.parse(localStorage.getItem("patients") || "[]")
-            const provisionalIdx = localPatients.findIndex((p: any) => p.id === provisionalPatientId)
-            if (provisionalIdx !== -1) {
-              localPatients[provisionalIdx].id = supabaseId
-              localStorage.setItem("patients", JSON.stringify(localPatients))
-              try { window.dispatchEvent(new Event("patientAdded")) } catch {}
-            } else {
-              // If not present for some reason, append with supabase id
-              localPatients.push(patientObject)
-              localStorage.setItem("patients", JSON.stringify(localPatients))
-              try { window.dispatchEvent(new Event("patientAdded")) } catch {}
-            }
-            // Also update any local prescriptions to reference the new id
-            const localPrescriptions = JSON.parse(localStorage.getItem("prescriptions") || "[]")
-            let updatedAny = false
-            const updatedPrescriptions = localPrescriptions.map((rx: any) => {
-              if (rx.patientId === provisionalPatientId) {
-                updatedAny = true
-                return { ...rx, patientId: supabaseId }
-              }
-              return rx
-            })
-            if (updatedAny) {
-              localStorage.setItem("prescriptions", JSON.stringify(updatedPrescriptions))
-            }
-          }
-        }
-        
-        // Handle prescription in Supabase
-        if (showPrescription && selectedDoctor) {
-          const prescriptionRecord = {
-            id: `prescription_${Date.now()}`,
-            patient_id: newPatientId, // uses Supabase UUID when available
-            user_id: "public_user",
-            doctor_name: selectedDoctor,
-            medications: medicationTable,
-            diagnosis: diagnosis,
-            investigation: investigation,
-            fee: fee,
-            notes: prescriptionNotes,
-            prescription_date: new Date().toISOString().split("T")[0],
-            status: "Active"
-          }
-          const { error: rxError } = await supabase
-            .from("prescriptions")
-            .insert([prescriptionRecord])
-          if (rxError) {
-            console.warn("Supabase prescription insert failed:", rxError)
-          }
-        }
-      } catch (supabaseError) {
-        // Log Supabase error but continue with localStorage data
-        console.warn("Supabase save failed, using localStorage only:", supabaseError)
-      }
+      // Supabase integration removed - using only localStorage
+      // All Supabase code has been removed, now using only localStorage for data persistence
       
       const actionText = isEditMode ? "updated" : "registered"
       const message =

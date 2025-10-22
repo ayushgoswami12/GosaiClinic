@@ -332,12 +332,16 @@ export default function PatientsPage() {
   const handleDeletePatient = async () => {
     if (!patientToDelete) return
     try {
-      // Delete from Supabase
-      await deletePatient(patientToDelete.id)
-      // Delete from localStorage
+      // Delete from localStorage only
       const updatedPatients = patients.filter((p) => p.id !== patientToDelete.id)
       setPatients(updatedPatients)
       localStorage.setItem("patients", JSON.stringify(updatedPatients))
+      
+      // Delete prescriptions for this patient
+      const prescriptions = JSON.parse(localStorage.getItem("prescriptions") || "[]")
+      const updatedPrescriptions = prescriptions.filter((p) => p.patientId !== patientToDelete.id)
+      localStorage.setItem("prescriptions", JSON.stringify(updatedPrescriptions))
+      
       setSelectedPatient(null)
       setPatientToDelete(null)
     } catch (error) {
