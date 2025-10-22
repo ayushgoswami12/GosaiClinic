@@ -820,7 +820,7 @@ export default function VisitsPage() {
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Doctor:</span>
-                    <span class="detail-value">Dr. ${selectedVisitForPrint.doctorName}</span>
+                    <span class="detail-value">${selectedVisitForPrint.doctorName}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Status:</span>
@@ -843,10 +843,10 @@ export default function VisitsPage() {
     <div class="visit-info-section">
         <div class="section-title">Visit Information</div>
         <div class="info-grid">
-            <div class="info-item">
-                <div class="info-label">Diagnosis</div>
-                <div class="info-content">${selectedVisitForPrint.diagnosis || "Not specified"}</div>
-            </div>
+            // <div class="info-item">
+            //     <div class="info-label">Diagnosis</div>
+            //     <div class="info-content">${selectedVisitForPrint.diagnosis || "Not specified"}</div>
+            // </div>
             ${
               selectedVisitForPrint.followUpDate
                 ? `
@@ -859,16 +859,7 @@ export default function VisitsPage() {
             }
         </div>
         
-        ${
-          selectedVisitForPrint.investigation
-            ? `
-        <div class="diagnosis-section" style="background: #f0fdf4; border-color: #22c55e;">
-            <span class="diagnosis-title" style="color: #15803d;">Investigation:</span>
-            <span class="diagnosis-content" style="color: #166534;">${selectedVisitForPrint.investigation}</span>
-        </div>
-        `
-            : ""
-        }
+        
     </div>
     
     <div class="medications-section">

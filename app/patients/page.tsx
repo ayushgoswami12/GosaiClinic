@@ -332,27 +332,14 @@ export default function PatientsPage() {
   const handleDeletePatient = async () => {
     if (!patientToDelete) return
     try {
+      // Delete from Supabase
+      await deletePatient(patientToDelete.id)
+      // Delete from localStorage
       const updatedPatients = patients.filter((p) => p.id !== patientToDelete.id)
       setPatients(updatedPatients)
       localStorage.setItem("patients", JSON.stringify(updatedPatients))
-
-      const storedPrescriptions = localStorage.getItem("prescriptions")
-      if (storedPrescriptions) {
-        const prescriptions = JSON.parse(storedPrescriptions)
-        const updatedPrescriptions = prescriptions.filter((p: Prescription) => p.patientId !== patientToDelete.id)
-        localStorage.setItem("prescriptions", JSON.stringify(updatedPrescriptions))
-      }
-
-      const storedVisits = localStorage.getItem("visits")
-      if (storedVisits) {
-        const visits = JSON.parse(storedVisits)
-        const updatedVisits = visits.filter((v: any) => v.patientId !== patientToDelete.id)
-        localStorage.setItem("visits", JSON.stringify(updatedVisits))
-      }
-
       setSelectedPatient(null)
       setPatientToDelete(null)
-      setDeleteDialogOpen(false)
     } catch (error) {
       console.error("Failed to delete patient:", error)
     }
@@ -754,11 +741,14 @@ export default function PatientsPage() {
         <div class="clinic-branding">
             <div class="clinic-title">GOSAI CLINIC</div>
             <div class="clinic-subtitle">Complete Healthcare Solutions</div>
+            <span class="doctor-name">${latestPrescription.doctorName || "Not Specified"}</span>
+                    <span class="prescription-date">Prescribed: ${latestPrescription.prescriptionDate || "Date not specified"}</span>
         </div>
         <div class="clinic-contact">
             <div>📍 Opp. Taluka Panchayat, Shiv Nagar, Bhanvad, Gujarat 360510</div>
             <div>📞 9426953220</div>
         </div>
+
     </div>
     
     <div class="print-date">
@@ -812,27 +802,7 @@ export default function PatientsPage() {
         </div>
     </div>
         
-    ${
-      selectedPatient.allergies
-        ? `
-    <div class="diagnosis-section" style="background: #fee2e2; border-color: #ef4444;">
-        <span class="diagnosis-title" style="color: #dc2626;">⚠️ Allergies:</span>
-        <span class="diagnosis-content" style="color: #991b1b;">${selectedPatient.allergies}</span>
-    </div>
-    `
-        : ""
-    }
     
-    ${
-      selectedPatient.medicalHistory
-        ? `
-    <div class="diagnosis-section" style="background: #f0f9ff; border-color: #0ea5e9;">
-        <span class="diagnosis-title" style="color: #0c4a6e;">Medical History:</span>
-        <span class="diagnosis-content" style="color: #075985;">${selectedPatient.medicalHistory}</span>
-    </div>
-    `
-        : ""
-    }
     </div>
     
     <div class="medications-section">
@@ -841,21 +811,9 @@ export default function PatientsPage() {
         ${
           latestPrescription
             ? `
-            ${
-              latestPrescription.diagnosis
-                ? `
-            <div class="diagnosis-section">
-                <span class="diagnosis-title">Diagnosis:</span>
-                <span class="diagnosis-content">${latestPrescription.diagnosis}</span>
-            </div>
-            `
-                : ""
-            }
-            
             <div class="prescription-info">
                 <div class="doctor-info">
-                    <span class="doctor-name">Dr. ${latestPrescription.doctorName || "Not Specified"}</span>
-                    <span class="prescription-date">Prescribed: ${latestPrescription.prescriptionDate || "Date not specified"}</span>
+                    
                 </div>
             </div>
             
@@ -967,6 +925,8 @@ export default function PatientsPage() {
         <div><strong>GOSAI CLINIC</strong> - Your Trusted Healthcare Partner</div>
         <div style="font-size: 8pt;">This is a computer-generated report. For queries, contact: 9426953220</div>
         <div style="font-size: 8pt;">Report ID: ${selectedPatient.id}-${Date.now()}</div>
+        
+        
     </div>
 </body>
 </html>`
