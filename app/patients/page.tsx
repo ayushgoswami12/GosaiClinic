@@ -242,6 +242,22 @@ export default function PatientsPage() {
 
         const investigationText = investigationReports.length > 0 ? investigationReports.join(", ") : "None"
 
+        const injectionsReports: string[] = []
+        const additionalMedicinesReports: string[] = []
+
+        patientPrescriptions.forEach((prescription) => {
+          if (prescription.injections && prescription.injections.trim() !== "") {
+            injectionsReports.push(prescription.injections)
+          }
+          if (prescription.additionalMedicines && prescription.additionalMedicines.trim() !== "") {
+            additionalMedicinesReports.push(prescription.additionalMedicines)
+          }
+        })
+
+        const injectionsText = injectionsReports.length > 0 ? injectionsReports.join(", ") : "None"
+        const additionalMedicinesText =
+          additionalMedicinesReports.length > 0 ? additionalMedicinesReports.join(", ") : "None"
+
         return {
           Name: `${patient.firstName} ${patient.lastName}`,
           Age: patient.age,
@@ -251,6 +267,8 @@ export default function PatientsPage() {
           Complain: patient.medicalHistory || "None reported",
           Reports: investigationText,
           Treatment: treatmentText,
+          Injections: injectionsText,
+          "Additional Medicines": additionalMedicinesText,
         }
       })
 
@@ -336,12 +354,12 @@ export default function PatientsPage() {
       const updatedPatients = patients.filter((p) => p.id !== patientToDelete.id)
       setPatients(updatedPatients)
       localStorage.setItem("patients", JSON.stringify(updatedPatients))
-      
+
       // Delete prescriptions for this patient
       const prescriptions = JSON.parse(localStorage.getItem("prescriptions") || "[]")
       const updatedPrescriptions = prescriptions.filter((p) => p.patientId !== patientToDelete.id)
       localStorage.setItem("prescriptions", JSON.stringify(updatedPrescriptions))
-      
+
       setSelectedPatient(null)
       setPatientToDelete(null)
     } catch (error) {

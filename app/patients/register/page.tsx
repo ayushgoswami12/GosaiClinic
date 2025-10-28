@@ -46,6 +46,8 @@ interface Prescription {
   investigation: string
   fee: string
   notes: string
+  injections: string
+  additionalMedicines: string
   prescriptionDate: string
   status: "Active" | "Completed" | "Cancelled"
 }
@@ -77,6 +79,8 @@ export default function PatientRegistration() {
   const [investigation, setInvestigation] = useState("")
   const [fee, setFee] = useState("")
   const [prescriptionNotes, setPrescriptionNotes] = useState("")
+  const [injections, setInjections] = useState("")
+  const [additionalMedicines, setAdditionalMedicines] = useState("")
 
   const [medicationTable, setMedicationTable] = useState<MedicationEntry[]>([])
   const [currentMedication, setCurrentMedication] = useState({
@@ -111,31 +115,31 @@ export default function PatientRegistration() {
     // Get URL parameters
     const searchParams = new URLSearchParams(window.location.search)
     const id = searchParams.get("id")
-    
+
     const fetchPatients = async () => {
       try {
         // Use localStorage for patient data
-        const patientsString = localStorage.getItem('patients')
+        const patientsString = localStorage.getItem("patients")
         const patients = patientsString ? JSON.parse(patientsString) : []
-        
+
         // Set total patients count
         setTotalPatients(patients.length || 0)
-        
+
         // If ID parameter exists, load patient data for editing
         if (id) {
           setIsEditMode(true)
           setPatientId(id)
-          
+
           // Find patient in local storage
-          const patientData = patients.find(patient => patient.id === id)
-          
+          const patientData = patients.find((patient) => patient.id === id)
+
           if (!patientData) {
             console.error("Patient not found in local storage")
             alert("Patient not found!")
             router.push("/patients")
             return
           }
-          
+
           if (patientData) {
             setFormData({
               firstName: patientData.firstName || "",
@@ -149,29 +153,31 @@ export default function PatientRegistration() {
               medicalHistory: patientData.medicalHistory || "",
               dateOfVisit: patientData.dateOfVisit?.split("T")[0] || new Date().toISOString().split("T")[0],
             })
-            
+
             // Load images when editing an existing patient
             if (Array.isArray(patientData.images)) {
               setImages(patientData.images)
             }
-            
+
             // Load prescriptions for this patient from localStorage
-            const prescriptionsString = localStorage.getItem('prescriptions')
+            const prescriptionsString = localStorage.getItem("prescriptions")
             const prescriptions = prescriptionsString ? JSON.parse(prescriptionsString) : []
             const patientPrescriptions = prescriptions.filter((p: any) => p.patientId === id)
-              
+
             if (patientPrescriptions && patientPrescriptions.length > 0) {
               // Sort by date to get the latest prescription
-              const latestPrescription = patientPrescriptions.sort((a: any, b: any) => 
-                new Date(b.prescriptionDate).getTime() - new Date(a.prescriptionDate).getTime()
+              const latestPrescription = patientPrescriptions.sort(
+                (a: any, b: any) => new Date(b.prescriptionDate).getTime() - new Date(a.prescriptionDate).getTime(),
               )[0]
-              
+
               setMedicationTable(latestPrescription.medications || [])
               setSelectedDoctor(latestPrescription.doctorName || "")
               setDiagnosis(latestPrescription.diagnosis || "")
               setInvestigation(latestPrescription.investigation || "")
               setFee(latestPrescription.fee || "")
               setPrescriptionNotes(latestPrescription.notes || "")
+              setInjections(latestPrescription.injections || "")
+              setAdditionalMedicines(latestPrescription.additionalMedicines || "")
               setShowPrescription(true)
             }
           }
@@ -180,7 +186,7 @@ export default function PatientRegistration() {
         console.error("Error fetching patient data:", error)
       }
     }
-    
+
     fetchPatients()
   }, [router])
 
@@ -282,13 +288,13 @@ export default function PatientRegistration() {
       // Use localStorage as fallback if Supabase fails
       const patients = JSON.parse(localStorage.getItem("patients") || "[]")
       const prescriptions = JSON.parse(localStorage.getItem("prescriptions") || "[]")
-      
+
       // Prepare a provisional ID; will be replaced by Supabase UUID when available
       const provisionalPatientId = isEditMode && patientId ? patientId : `patient_${Date.now()}`
-      let newPatientId = provisionalPatientId
-      
+      const newPatientId = provisionalPatientId
+
       // Create patient object (id may be overwritten after Supabase insert)
-      let patientObject: any = {
+      const patientObject: any = {
         id: newPatientId,
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -301,9 +307,9 @@ export default function PatientRegistration() {
         medicalHistory: formData.medicalHistory,
         dateOfVisit: formData.dateOfVisit,
         registrationDate: new Date().toISOString(),
-        images: images
+        images: images,
       }
-      
+
       // Update or add patient to localStorage
       if (isEditMode && patientId) {
         const patientIndex = patients.findIndex((p: any) => p.id === patientId)
@@ -315,11 +321,13 @@ export default function PatientRegistration() {
       } else {
         patients.push(patientObject)
       }
-      
+
       localStorage.setItem("patients", JSON.stringify(patients))
       // notify other tabs in this browser
-      try { window.dispatchEvent(new Event("patientAdded")) } catch {}
-      
+      try {
+        window.dispatchEvent(new Event("patientAdded"))
+      } catch {}
+
       // Handle prescription if needed
       if (showPrescription && selectedDoctor) {
         const prescriptionObject = {
@@ -332,18 +340,20 @@ export default function PatientRegistration() {
           investigation: investigation,
           fee: fee,
           notes: prescriptionNotes,
+          injections: injections,
+          additionalMedicines: additionalMedicines,
           prescriptionDate: new Date().toISOString().split("T")[0],
           date: new Date().toISOString(),
-          status: "Active"
+          status: "Active",
         }
-        
+
         prescriptions.push(prescriptionObject)
         localStorage.setItem("prescriptions", JSON.stringify(prescriptions))
       }
-      
+
       // Supabase integration removed - using only localStorage
       // All Supabase code has been removed, now using only localStorage for data persistence
-      
+
       const actionText = isEditMode ? "updated" : "registered"
       const message =
         showPrescription && selectedDoctor
@@ -913,6 +923,28 @@ export default function PatientRegistration() {
                       value={prescriptionNotes}
                       onChange={(e) => setPrescriptionNotes(e.target.value)}
                       placeholder="Any additional instructions or notes"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="injections">Injections</Label>
+                    <Textarea
+                      id="injections"
+                      value={injections}
+                      onChange={(e) => setInjections(e.target.value)}
+                      placeholder="Enter injection details, names, and dosage"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="additionalMedicines">Additional Medicines</Label>
+                    <Textarea
+                      id="additionalMedicines"
+                      value={additionalMedicines}
+                      onChange={(e) => setAdditionalMedicines(e.target.value)}
+                      placeholder="Enter any additional medicines or supplements"
                       rows={3}
                     />
                   </div>
