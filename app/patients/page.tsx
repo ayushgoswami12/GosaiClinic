@@ -763,8 +763,8 @@ export default function PatientsPage() {
         <div class="clinic-branding">
             <div class="clinic-title">GOSAI CLINIC</div>
             <div class="clinic-subtitle">Complete Healthcare Solutions</div>
-            <span class="doctor-name">${latestPrescription.doctorName || "Not Specified"}</span>
-                    <span class="prescription-date">Prescribed: ${latestPrescription.prescriptionDate || "Date not specified"}</span>
+            <span class="doctor-name">${latestPrescription ? (latestPrescription.doctorName || "Not Specified") : "Not Specified"}</span>
+                    <span class="prescription-date">Prescribed: ${latestPrescription ? (latestPrescription.prescriptionDate || "Date not specified") : "Date not specified"}</span>
         </div>
         <div class="clinic-contact">
             <div>📍 Opp. Taluka Panchayat, Shiv Nagar, Bhanvad, Gujarat 360510</div>
