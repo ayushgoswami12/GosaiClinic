@@ -396,7 +396,7 @@ export default function PatientsPage() {
   const handleDeletePatient = async () => {
     if (!patientToDelete) return
     try {
-      // Delete from localStorage only
+      // Delete locally first for immediate UI feedback
       const updatedPatients = patients.filter((p) => p.id !== patientToDelete.id)
       setPatients(updatedPatients)
       localStorage.setItem("patients", JSON.stringify(updatedPatients))
@@ -405,6 +405,32 @@ export default function PatientsPage() {
       const prescriptions = JSON.parse(localStorage.getItem("prescriptions") || "[]")
       const updatedPrescriptions = prescriptions.filter((p) => p.patientId !== patientToDelete.id)
       localStorage.setItem("prescriptions", JSON.stringify(updatedPrescriptions))
+
+      // Sync deletion to shared JSONBin (remote)
+      try {
+        // Delete patient remotely
+        await fetch(`/api/patients/${patientToDelete.id}`, { method: "DELETE" })
+
+        // Fetch remote prescriptions and delete those belonging to this patient
+        const remotePrescRes = await fetch("/api/prescriptions")
+        if (remotePrescRes.ok) {
+          const remotePrescriptions: any[] = await remotePrescRes.json()
+          const toDelete = remotePrescriptions.filter((p: any) => p.patientId === patientToDelete.id)
+          // Delete each prescription remotely; fire-and-forget to avoid blocking UI
+          await Promise.all(
+            toDelete.map((p: any) =>
+              fetch(`/api/prescriptions/${p.id}`, { method: "DELETE" }).catch(() => undefined),
+            ),
+          )
+        }
+      } catch (syncErr) {
+        console.error("[v0] Remote delete sync failed:", syncErr)
+      }
+
+      // Notify other parts of the app to refresh data
+      try {
+        window.dispatchEvent(new Event("patientAdded"))
+      } catch {}
 
       setSelectedPatient(null)
       setPatientToDelete(null)

@@ -6,7 +6,7 @@ export async function GET(_request: NextRequest) {
     const patients = await fetchSharedPatients()
     return NextResponse.json(patients)
   } catch (error) {
-    console.error("[v0] Error fetching patients (JSONBin):", error)
+    console.error("[v0] Error fetching patients from JSONBin:", error)
     return NextResponse.json({ error: "Failed to fetch patients" }, { status: 500 })
   }
 }
@@ -14,6 +14,10 @@ export async function GET(_request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const patientData = await request.json()
+
+    if (!patientData.firstName || !patientData.lastName || !patientData.phone) {
+      return NextResponse.json({ error: "Missing required fields: firstName, lastName, phone" }, { status: 400 })
+    }
 
     // Shape patient object similar to localStorage structure
     const newPatient = {
@@ -37,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(newPatient, { status: 201 })
   } catch (error) {
-    console.error("[v0] Error creating patient (JSONBin):", error)
+    console.error("[v0] Error creating patient in JSONBin:", error)
     return NextResponse.json({ error: "Failed to create patient" }, { status: 500 })
   }
 }
