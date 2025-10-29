@@ -239,8 +239,19 @@ export default function PatientsPage() {
     })
 
   // Excel export feature
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     if (patients.length === 0) return
+
+    // Ensure we have the latest prescriptions from remote before exporting
+    try {
+      const res = await fetch("/api/prescriptions", { cache: "no-store" })
+      if (res.ok) {
+        const remoteRx = await res.json()
+        localStorage.setItem("prescriptions", JSON.stringify(remoteRx || []))
+      }
+    } catch (err) {
+      console.error("[v0] Error refreshing prescriptions for export:", err)
+    }
 
     // Import xlsx dynamically to avoid SSR issues
     import("xlsx").then((XLSX) => {
@@ -253,7 +264,12 @@ export default function PatientsPage() {
         const medicationNames: string[] = []
         patientPrescriptions.forEach((prescription) => {
           prescription.medications.forEach((medication) => {
-            medicationNames.push(medication.name)
+            // Include basic details to make medicines clearer in Excel
+            const freq = Array.isArray(medication.frequency) ? medication.frequency.join("/") : ""
+            const details = [medication.name, medication.dosage, freq, medication.duration]
+              .filter(Boolean)
+              .join(" ")
+            medicationNames.push(details)
           })
         })
 
