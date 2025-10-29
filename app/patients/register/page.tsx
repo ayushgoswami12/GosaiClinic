@@ -323,6 +323,25 @@ export default function PatientRegistration() {
       }
 
       localStorage.setItem("patients", JSON.stringify(patients))
+
+      // Sync to shared JSONBin so other devices see this patient
+      try {
+        if (isEditMode && patientId) {
+          await fetch(`/api/patients/${patientId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(patientObject),
+          })
+        } else {
+          await fetch("/api/patients", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(patientObject),
+          })
+        }
+      } catch (err) {
+        console.error("[v0] JSONBin sync error (add/update patient):", err)
+      }
       // notify other tabs in this browser
       try {
         window.dispatchEvent(new Event("patientAdded"))

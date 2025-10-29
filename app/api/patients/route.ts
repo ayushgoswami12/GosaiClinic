@@ -1,72 +1,43 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/app/lib/supabase/server"
+import { fetchSharedPatients, saveSharedPatients } from "@/app/lib/jsonbin"
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const { data: patients, error } = await supabase
-      .from("patients")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-
-    if (error) throw error
-
-    return NextResponse.json(patients || [])
+    const patients = await fetchSharedPatients()
+    return NextResponse.json(patients)
   } catch (error) {
-    console.error("[v0] Error fetching patients:", error)
+    console.error("[v0] Error fetching patients (JSONBin):", error)
     return NextResponse.json({ error: "Failed to fetch patients" }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const patientData = await request.json()
 
-    const { data: newPatient, error } = await supabase
-      .from("patients")
-      .insert([
-        {
-          user_id: user.id,
-          first_name: patientData.firstName,
-          last_name: patientData.lastName,
-          age: patientData.age,
-          gender: patientData.gender,
-          phone: patientData.phone,
-          address: patientData.address,
-          blood_type: patientData.bloodType,
-          allergies: patientData.allergies,
-          medical_history: patientData.medicalHistory,
-          date_of_visit: patientData.dateOfVisit,
-          images: patientData.images || [],
-        },
-      ])
-      .select()
+    // Shape patient object similar to localStorage structure
+    const newPatient = {
+      id: patientData.id || `PAT-${Date.now()}`,
+      firstName: patientData.firstName,
+      lastName: patientData.lastName,
+      age: patientData.age,
+      gender: patientData.gender,
+      phone: patientData.phone,
+      address: patientData.address,
+      bloodType: patientData.bloodType,
+      allergies: patientData.allergies,
+      medicalHistory: patientData.medicalHistory,
+      dateOfVisit: patientData.dateOfVisit,
+      registrationDate: patientData.registrationDate || new Date().toISOString(),
+      images: patientData.images || [],
+    }
 
-    if (error) throw error
+    const patients = await fetchSharedPatients()
+    await saveSharedPatients([newPatient, ...patients])
 
-    return NextResponse.json(newPatient?.[0], { status: 201 })
+    return NextResponse.json(newPatient, { status: 201 })
   } catch (error) {
-    console.error("[v0] Error creating patient:", error)
+    console.error("[v0] Error creating patient (JSONBin):", error)
     return NextResponse.json({ error: "Failed to create patient" }, { status: 500 })
   }
 }

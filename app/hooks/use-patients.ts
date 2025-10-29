@@ -1,37 +1,26 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/app/lib/auth-context"
-import { createClient } from "@/app/lib/supabase/client"
 
 export function usePatients() {
   const [patients, setPatients] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { user, isAuthenticated } = useAuth()
 
   const fetchPatients = async () => {
-    if (!isAuthenticated || !user) {
-      setIsLoading(false)
-      return
-    }
-
     try {
       setIsLoading(true)
-      const supabase = createClient()
-
-      const { data, error: fetchError } = await supabase
-        .from("patients")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-
-      if (fetchError) throw fetchError
-
+      const response = await fetch("/api/patients", { cache: "no-store" })
+      if (!response.ok) throw new Error("Failed to fetch patients")
+      const data = await response.json()
       setPatients(data || [])
+      localStorage.setItem("patients", JSON.stringify(data || []))
       setError(null)
     } catch (err) {
-      console.error("[v0] Error fetching patients:", err)
+      console.error("[v0] Error fetching patients (JSONBin):", err)
+      // Fallback to localStorage if remote fetch fails
+      const local = JSON.parse(localStorage.getItem("patients") || "[]")
+      setPatients(local)
       setError(err instanceof Error ? err.message : "Unknown error")
     } finally {
       setIsLoading(false)
@@ -40,34 +29,9 @@ export function usePatients() {
 
   useEffect(() => {
     fetchPatients()
-
-    if (!user) return
-
-    const supabase = createClient()
-    const subscription = supabase
-      .channel(`patients:${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "patients",
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          fetchPatients()
-        },
-      )
-      .subscribe()
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [isAuthenticated, user])
+  }, [])
 
   const addPatient = async (patientData: any) => {
-    if (!user) throw new Error("User not authenticated")
-
     try {
       const response = await fetch("/api/patients", {
         method: "POST",
@@ -76,7 +40,9 @@ export function usePatients() {
       })
       if (!response.ok) throw new Error("Failed to add patient")
       const newPatient = await response.json()
-      setPatients([newPatient, ...patients])
+      const updated = [newPatient, ...patients]
+      setPatients(updated)
+      localStorage.setItem("patients", JSON.stringify(updated))
       return newPatient
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error")
@@ -92,9 +58,11 @@ export function usePatients() {
         body: JSON.stringify(updates),
       })
       if (!response.ok) throw new Error("Failed to update patient")
-      const updated = await response.json()
-      setPatients(patients.map((p) => (p.id === id ? updated : p)))
-      return updated
+      const updatedPatient = await response.json()
+      const updatedList = patients.map((p) => (p.id === id ? updatedPatient : p))
+      setPatients(updatedList)
+      localStorage.setItem("patients", JSON.stringify(updatedList))
+      return updatedPatient
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error")
       throw err
@@ -103,17 +71,15 @@ export function usePatients() {
 
   const deletePatient = async (id: string) => {
     try {
-      // Using only localStorage for patient deletion
-      const localPatients = JSON.parse(localStorage.getItem("patients") || "[]")
-      const updatedPatients = localPatients.filter((p: any) => p.id !== id)
+      const response = await fetch(`/api/patients/${id}`, { method: "DELETE" })
+      if (!response.ok) throw new Error("Failed to delete patient")
+      const updatedPatients = patients.filter((p: any) => p.id !== id)
+      setPatients(updatedPatients)
       localStorage.setItem("patients", JSON.stringify(updatedPatients))
-      
-      // Also delete related prescriptions
+      // Also remove related prescriptions locally
       const localPrescriptions = JSON.parse(localStorage.getItem("prescriptions") || "[]")
       const updatedPrescriptions = localPrescriptions.filter((p: any) => p.patientId !== id)
       localStorage.setItem("prescriptions", JSON.stringify(updatedPrescriptions))
-      
-      setPatients(updatedPatients)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error")
       throw err

@@ -1202,12 +1202,6 @@ export default function PatientsPage() {
                                 {selectedPatient.medicalHistory || "None reported"}
                               </p>
                             </div>
-                            <div>
-                              <span className="font-medium">Allergies:</span>
-                              <p className="text-gray-600 dark:text-gray-400">
-                                {selectedPatient.allergies || "None reported"}
-                              </p>
-                            </div>
                           </div>
                         </div>
 
