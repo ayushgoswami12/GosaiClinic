@@ -83,6 +83,29 @@ export default function PrescriptionsPage() {
     if (storedPrescriptions) {
       setPrescriptions(JSON.parse(storedPrescriptions))
     }
+
+    // Also sync from remote JSONBin so all devices see same prescriptions
+    const fetchRemote = async () => {
+      try {
+        const [patientsRes, rxRes] = await Promise.all([
+          fetch("/api/patients", { cache: "no-store" }),
+          fetch("/api/prescriptions", { cache: "no-store" }),
+        ])
+        if (patientsRes.ok) {
+          const remotePatients = await patientsRes.json()
+          localStorage.setItem("patients", JSON.stringify(remotePatients || []))
+          setPatients(remotePatients || [])
+        }
+        if (rxRes.ok) {
+          const remoteRx = await rxRes.json()
+          localStorage.setItem("prescriptions", JSON.stringify(remoteRx || []))
+          setPrescriptions(remoteRx || [])
+        }
+      } catch (err) {
+        console.error("[v0] Error syncing remote patients/prescriptions:", err)
+      }
+    }
+    fetchRemote()
   }, [])
 
   const addMedication = () => {
@@ -133,6 +156,17 @@ export default function PrescriptionsPage() {
     const updatedPrescriptions = [...prescriptions, newPrescription]
     setPrescriptions(updatedPrescriptions)
     localStorage.setItem("prescriptions", JSON.stringify(updatedPrescriptions))
+
+    // Sync new prescription to shared JSONBin
+    try {
+      fetch("/api/prescriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newPrescription),
+      }).catch((err) => console.error("[v0] JSONBin sync error (add prescription):", err))
+    } catch (err) {
+      console.error("[v0] JSONBin sync error (add prescription):", err)
+    }
 
     // Dispatch event to update medicine suggestions
     window.dispatchEvent(new CustomEvent("prescriptionAdded"))

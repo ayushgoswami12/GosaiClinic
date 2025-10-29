@@ -368,6 +368,17 @@ export default function PatientRegistration() {
 
         prescriptions.push(prescriptionObject)
         localStorage.setItem("prescriptions", JSON.stringify(prescriptions))
+
+        // Sync to shared JSONBin so other devices see this prescription
+        try {
+          await fetch("/api/prescriptions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(prescriptionObject),
+          })
+        } catch (err) {
+          console.error("[v0] JSONBin sync error (add prescription):", err)
+        }
       }
 
       // Supabase integration removed - using only localStorage

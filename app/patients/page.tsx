@@ -82,10 +82,24 @@ export default function PatientsPage() {
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null)
   const { deletePatient } = usePatients()
 
-  const loadPatients = () => {
-    const storedPatients = localStorage.getItem("patients")
-    if (storedPatients) {
-      setPatients(JSON.parse(storedPatients))
+  const loadPatients = async () => {
+    try {
+      // Try remote first to keep devices in sync
+      const res = await fetch("/api/patients", { cache: "no-store" })
+      if (res.ok) {
+        const remote = await res.json()
+        // Replace local with remote to avoid duplicates
+        localStorage.setItem("patients", JSON.stringify(remote || []))
+        setPatients(remote || [])
+      } else {
+        // Fallback to local
+        const local = JSON.parse(localStorage.getItem("patients") || "[]")
+        setPatients(local)
+      }
+    } catch (err) {
+      console.error("[v0] Error loading patients:", err)
+      const local = JSON.parse(localStorage.getItem("patients") || "[]")
+      setPatients(local)
     }
   }
 
@@ -101,6 +115,22 @@ export default function PatientsPage() {
     return () => {
       window.removeEventListener("patientAdded", handlePatientAdded)
     }
+  }, [])
+
+  // Keep prescriptions in sync across devices
+  useEffect(() => {
+    const syncPrescriptions = async () => {
+      try {
+        const res = await fetch("/api/prescriptions", { cache: "no-store" })
+        if (res.ok) {
+          const data = await res.json()
+          localStorage.setItem("prescriptions", JSON.stringify(data || []))
+        }
+      } catch (err) {
+        console.error("[v0] Error syncing prescriptions:", err)
+      }
+    }
+    syncPrescriptions()
   }, [])
 
   useEffect(() => {
