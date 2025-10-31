@@ -479,9 +479,14 @@ export default function PatientsPage() {
       })
     })
 
-    const patientImages: string[] = Array.isArray((selectedPatient as any).images)
-      ? (selectedPatient as any).images
-      : []
+    // Retrieve patient images from localStorage where they are stored separately
+    let patientImages: string[] = []
+    try {
+      const storedImages = localStorage.getItem(`patient_images_${selectedPatient.id}`)
+      patientImages = storedImages ? JSON.parse(storedImages) : []
+    } catch (error) {
+      console.error("Error retrieving patient images:", error)
+    }
 
     const imagePages: string[][] = []
     for (let i = 0; i < patientImages.length; i += 4) {
