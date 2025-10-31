@@ -15,9 +15,7 @@ export async function POST(request: NextRequest) {
   try {
     const patientData = await request.json()
 
-    if (!patientData.firstName || !patientData.lastName || !patientData.phone) {
-      return NextResponse.json({ error: "Missing required fields: firstName, lastName, phone" }, { status: 400 })
-    }
+    // All fields are now optional - removed validation for firstName, lastName, and phone
 
     // Shape patient object similar to localStorage structure
     const newPatient = {

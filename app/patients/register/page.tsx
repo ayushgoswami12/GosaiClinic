@@ -154,9 +154,14 @@ export default function PatientRegistration() {
               dateOfVisit: patientData.dateOfVisit?.split("T")[0] || new Date().toISOString().split("T")[0],
             })
 
-            // Load images when editing an existing patient
-            if (Array.isArray(patientData.images)) {
-              setImages(patientData.images)
+            const storedImages = localStorage.getItem(`patient_images_${id}`)
+            if (storedImages) {
+              try {
+                setImages(JSON.parse(storedImages))
+              } catch (e) {
+                console.error("[v0] Failed to parse stored images:", e)
+                setImages([])
+              }
             }
 
             // Load prescriptions for this patient from localStorage
@@ -256,6 +261,8 @@ export default function PatientRegistration() {
       }
     }
     setImages((prev) => [...prev, ...processed])
+    const fileInput = document.getElementById("patient-images") as HTMLInputElement
+    if (fileInput) fileInput.value = ""
   }
 
   const removeImageAt = (idx: number) => {
@@ -264,15 +271,10 @@ export default function PatientRegistration() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const requiredFields = ["firstName", "lastName", "age", "gender", "phone", "address"]
-    const missingFields = requiredFields.filter((field) => !formData[field as keyof typeof formData])
-    if (missingFields.length > 0) {
-      alert("Please fill in all required fields.")
-      return
-    }
+    // All fields are now optional - no validation for first name, last name, gender, address, and phone
 
-    const ageNum = Number.parseInt(formData.age)
-    if (isNaN(ageNum) || ageNum < 0 || ageNum > 150) {
+    const ageNum = formData.age ? Number.parseInt(formData.age) : null
+    if (formData.age && (isNaN(ageNum) || ageNum < 0 || ageNum > 150)) {
       alert("Please enter a valid age between 0 and 150.")
       return
     }
@@ -285,15 +287,19 @@ export default function PatientRegistration() {
     }
 
     try {
-      // Use localStorage as fallback if Supabase fails
+      if (images.length > 0) {
+        console.log(`[v0] Storing ${images.length} images locally (not syncing to JSONBin)`)
+      }
+
+      // Use localStorage for patient data
       const patients = JSON.parse(localStorage.getItem("patients") || "[]")
       const prescriptions = JSON.parse(localStorage.getItem("prescriptions") || "[]")
 
-      // Prepare a provisional ID; will be replaced by Supabase UUID when available
+      // Prepare a provisional ID; will be replaced by unique ID when available
       const provisionalPatientId = isEditMode && patientId ? patientId : `patient_${Date.now()}`
       const newPatientId = provisionalPatientId
 
-      // Create patient object (id may be overwritten after Supabase insert)
+      // Images are stored separately in a dedicated localStorage key to avoid exceeding JSONBin 100KB limit
       const patientObject: any = {
         id: newPatientId,
         firstName: formData.firstName,
@@ -307,7 +313,12 @@ export default function PatientRegistration() {
         medicalHistory: formData.medicalHistory,
         dateOfVisit: formData.dateOfVisit,
         registrationDate: new Date().toISOString(),
-        images: images,
+        // images: images,  // Removed from JSONBin payload
+      }
+
+      // Store images separately in localStorage with the patient ID as key
+      if (images.length > 0) {
+        localStorage.setItem(`patient_images_${newPatientId}`, JSON.stringify(images))
       }
 
       // Update or add patient to localStorage
@@ -324,20 +335,28 @@ export default function PatientRegistration() {
 
       localStorage.setItem("patients", JSON.stringify(patients))
 
-      // Sync to shared JSONBin so other devices see this patient
+      // Sync to shared JSONBin so other devices see this patient (without images)
       try {
         if (isEditMode && patientId) {
-          await fetch(`/api/patients/${patientId}`, {
+          const response = await fetch(`/api/patients/${patientId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(patientObject),
           })
+          if (!response.ok) {
+            throw new Error(`Failed to update patient: ${response.status}`)
+          }
+          console.log("[v0] Patient updated in JSONBin successfully")
         } else {
-          await fetch("/api/patients", {
+          const response = await fetch("/api/patients", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(patientObject),
           })
+          if (!response.ok) {
+            throw new Error(`Failed to create patient: ${response.status}`)
+          }
+          console.log("[v0] Patient created in JSONBin successfully")
         }
       } catch (err) {
         console.error("[v0] JSONBin sync error (add/update patient):", err)
@@ -371,18 +390,19 @@ export default function PatientRegistration() {
 
         // Sync to shared JSONBin so other devices see this prescription
         try {
-          await fetch("/api/prescriptions", {
+          const response = await fetch("/api/prescriptions", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(prescriptionObject),
           })
+          if (!response.ok) {
+            throw new Error(`Failed to create prescription: ${response.status}`)
+          }
+          console.log("[v0] Prescription created in JSONBin successfully")
         } catch (err) {
           console.error("[v0] JSONBin sync error (add prescription):", err)
         }
       }
-
-      // Supabase integration removed - using only localStorage
-      // All Supabase code has been removed, now using only localStorage for data persistence
 
       const actionText = isEditMode ? "updated" : "registered"
       const message =
@@ -519,41 +539,38 @@ export default function PatientRegistration() {
               <CardContent className="grid gap-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name *</Label>
+                    <Label htmlFor="firstName">First Name</Label>
                     <Input
                       id="firstName"
                       value={formData.firstName}
                       onChange={(e) => handleInputChange("firstName", e.target.value)}
-                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name *</Label>
+                    <Label htmlFor="lastName">Last Name</Label>
                     <Input
                       id="lastName"
                       value={formData.lastName}
                       onChange={(e) => handleInputChange("lastName", e.target.value)}
-                      required
                     />
                   </div>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="age">Age (in years) *</Label>
+                    <Label htmlFor="age">Age (in years)</Label>
                     <Input
                       id="age"
                       type="number"
                       placeholder="Enter age in years"
                       value={formData.age}
                       onChange={(e) => handleInputChange("age", e.target.value)}
-                      required
                       min="0"
                       max="150"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="gender">Gender *</Label>
+                    <Label htmlFor="gender">Gender</Label>
                     <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select gender" />
@@ -569,24 +586,22 @@ export default function PatientRegistration() {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Label htmlFor="phone">Phone Number</Label>
                     <Input
                       id="phone"
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
-                      required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address *</Label>
+                  <Label htmlFor="address">Address</Label>
                   <Textarea
                     id="address"
                     value={formData.address}
                     onChange={(e) => handleInputChange("address", e.target.value)}
-                    required
                   />
                 </div>
 
@@ -683,7 +698,7 @@ export default function PatientRegistration() {
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={src || "/placeholder.svg"}
+                          src={`${src}#${idx}-${Date.now()}`}
                           alt={`Patient report ${idx + 1}`}
                           className="w-full h-40 object-cover"
                           crossOrigin="anonymous"
